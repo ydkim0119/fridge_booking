@@ -19,7 +19,7 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// GET filtered reservations - 필터링 기능 추가
+// GET filtered reservations - 필터링 기능 개선
 router.get('/filter', protect, async (req, res) => {
   try {
     const { userId, equipmentId, startDate, endDate } = req.query;
@@ -27,31 +27,36 @@ router.get('/filter', protect, async (req, res) => {
     // 필터 조건 구성
     const filterConditions = {};
     
+    // 사용자 ID로 필터링 (클라이언트에서 userId로 전송)
     if (userId) {
       filterConditions.user = userId;
     }
     
+    // 장비 ID로 필터링 (클라이언트에서 equipmentId로 전송)
     if (equipmentId) {
       filterConditions.equipment = equipmentId;
     }
     
     // 날짜 범위 필터링
     if (startDate || endDate) {
-      filterConditions.date = {};
+      const dateFilter = {};
       
       if (startDate) {
-        filterConditions.date.$gte = new Date(startDate);
+        dateFilter.$gte = new Date(startDate);
       }
       
       if (endDate) {
-        filterConditions.date.$lte = new Date(endDate);
+        dateFilter.$lte = new Date(endDate);
       }
+      
+      // MongoDB에서 startTime 필드를 기준으로 필터링
+      filterConditions.startTime = dateFilter;
     }
     
     const reservations = await Reservation.find(filterConditions)
       .populate('user', 'name email')
       .populate('equipment', 'name type location')
-      .sort({ date: 1, startTime: 1 });
+      .sort({ startTime: 1 });
       
     res.json(reservations);
   } catch (error) {
@@ -74,7 +79,7 @@ router.get('/user/:userId', protect, async (req, res) => {
     // Get user's reservations
     const reservations = await Reservation.find({ user: userId })
       .populate('equipment', 'name type location')
-      .sort({ date: 1, startTime: 1 });
+      .sort({ startTime: 1 });
       
     res.json(reservations);
   } catch (error) {
@@ -97,7 +102,7 @@ router.get('/equipment/:equipmentId', protect, async (req, res) => {
     // Get equipment reservations
     const reservations = await Reservation.find({ equipment: equipmentId })
       .populate('user', 'name email')
-      .sort({ date: 1, startTime: 1 });
+      .sort({ startTime: 1 });
       
     res.json(reservations);
   } catch (error) {
@@ -127,10 +132,10 @@ router.get('/:id', protect, async (req, res) => {
 // POST create a new reservation
 router.post('/', protect, async (req, res) => {
   try {
-    const { equipment, date, startTime, endTime, notes } = req.body;
+    const { title, equipment, date, startTime, endTime, notes } = req.body;
     
     // Basic validation
-    if (!equipment || !date || !startTime || !endTime) {
+    if (!equipment || !startTime || !endTime) {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
     
@@ -143,7 +148,6 @@ router.post('/', protect, async (req, res) => {
     // Check for overlapping reservations
     const overlappingReservations = await Reservation.find({
       equipment,
-      date: new Date(date),
       $or: [
         { 
           startTime: { $lt: endTime },
@@ -161,18 +165,18 @@ router.post('/', protect, async (req, res) => {
     
     // Create reservation
     const newReservation = new Reservation({
-      user: req.user.id, // From auth middleware
+      title: title || `${equipmentExists.name} 예약`,
+      user: req.user._id, // From auth middleware
       equipment,
-      date: new Date(date),
-      startTime,
-      endTime,
+      startTime: new Date(startTime),
+      endTime: new Date(endTime),
       notes: notes || ''
     });
     
-    await newReservation.save();
+    const savedReservation = await newReservation.save();
     
     // Populate details for response
-    const populatedReservation = await Reservation.findById(newReservation._id)
+    const populatedReservation = await Reservation.findById(savedReservation._id)
       .populate('user', 'name email')
       .populate('equipment', 'name type location');
       
@@ -186,7 +190,7 @@ router.post('/', protect, async (req, res) => {
 // PUT update a reservation
 router.put('/:id', protect, async (req, res) => {
   try {
-    const { equipment, date, startTime, endTime, notes } = req.body;
+    const { title, equipment, date, startTime, endTime, notes } = req.body;
     const reservationId = req.params.id;
     
     // Verify reservation exists
@@ -196,22 +200,20 @@ router.put('/:id', protect, async (req, res) => {
     }
     
     // Check if user is authorized to update reservation
-    if (reservation.user.toString() !== req.user.id && !req.user.isAdmin) {
+    if (reservation.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
       return res.status(403).json({ message: 'Not authorized to update this reservation' });
     }
     
     // If equipment or date/time is changing, check for conflicts
     if (
       (equipment && equipment !== reservation.equipment.toString()) ||
-      (date && new Date(date).toDateString() !== new Date(reservation.date).toDateString()) ||
-      (startTime && startTime !== reservation.startTime) ||
-      (endTime && endTime !== reservation.endTime)
+      (startTime && new Date(startTime).toISOString() !== new Date(reservation.startTime).toISOString()) ||
+      (endTime && new Date(endTime).toISOString() !== new Date(reservation.endTime).toISOString())
     ) {
       // Check for overlapping reservations
       const overlappingReservations = await Reservation.find({
         _id: { $ne: reservationId }, // Exclude current reservation
         equipment: equipment || reservation.equipment,
-        date: date ? new Date(date) : reservation.date,
         $or: [
           { 
             startTime: { $lt: endTime || reservation.endTime },
@@ -229,10 +231,10 @@ router.put('/:id', protect, async (req, res) => {
     }
     
     // Update fields
+    if (title) reservation.title = title;
     if (equipment) reservation.equipment = equipment;
-    if (date) reservation.date = new Date(date);
-    if (startTime) reservation.startTime = startTime;
-    if (endTime) reservation.endTime = endTime;
+    if (startTime) reservation.startTime = new Date(startTime);
+    if (endTime) reservation.endTime = new Date(endTime);
     if (notes !== undefined) reservation.notes = notes;
     
     // Save updated reservation
@@ -262,7 +264,7 @@ router.delete('/:id', protect, async (req, res) => {
     }
     
     // Check if user is authorized to delete reservation
-    if (reservation.user.toString() !== req.user.id && !req.user.isAdmin) {
+    if (reservation.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
       return res.status(403).json({ message: 'Not authorized to delete this reservation' });
     }
     
@@ -291,14 +293,14 @@ router.get('/range/:startDate/:endDate', protect, async (req, res) => {
     
     // Get reservations in date range
     const reservations = await Reservation.find({
-      date: {
+      startTime: {
         $gte: start,
         $lte: end
       }
     })
     .populate('user', 'name email')
     .populate('equipment', 'name type location')
-    .sort({ date: 1, startTime: 1 });
+    .sort({ startTime: 1 });
     
     res.json(reservations);
   } catch (error) {
