@@ -1,307 +1,310 @@
 const express = require('express');
 const router = express.Router();
-const { body } = require('express-validator');
+const mongoose = require('mongoose');
 const Reservation = require('../models/Reservation');
 const Equipment = require('../models/Equipment');
-const { protect, admin } = require('../middleware/auth');
-const { validateRequest } = require('../middleware/validator');
+const User = require('../models/User');
+const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
 
-// @route   GET /api/reservations
-// @desc    Get all reservations
-// @access  Private
-router.get('/', protect, async (req, res) => {
+// GET all reservations
+router.get('/', auth, async (req, res) => {
   try {
-    let query = {};
+    const reservations = await Reservation.find()
+      .populate('user', 'name email')
+      .populate('equipment', 'name type location');
+    res.json(reservations);
+  } catch (error) {
+    console.error('Error fetching reservations:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET filtered reservations - 필터링 기능 추가
+router.get('/filter', auth, async (req, res) => {
+  try {
+    const { userId, equipmentId, startDate, endDate } = req.query;
     
-    // 필터링 옵션
-    if (req.query.equipmentId) {
-      query.equipmentId = req.query.equipmentId;
+    // 필터 조건 구성
+    const filterConditions = {};
+    
+    if (userId) {
+      filterConditions.user = userId;
     }
     
-    // 관리자가 아닌 경우 자신의 예약만 볼 수 있음
-    if (req.query.userId) {
-      // 관리자만 다른 사용자의 예약을 볼 수 있음
-      if (req.user.role !== 'admin' && req.query.userId !== req.user._id.toString()) {
-        return res.status(403).json({ message: '다른 사용자의 예약을 조회할 권한이 없습니다' });
+    if (equipmentId) {
+      filterConditions.equipment = equipmentId;
+    }
+    
+    // 날짜 범위 필터링
+    if (startDate || endDate) {
+      filterConditions.date = {};
+      
+      if (startDate) {
+        filterConditions.date.$gte = new Date(startDate);
       }
-      query.userId = req.query.userId;
-    } else if (req.user.role !== 'admin') {
-      // 관리자가 아니면 자신의 예약만
-      query.userId = req.user._id;
+      
+      if (endDate) {
+        filterConditions.date.$lte = new Date(endDate);
+      }
     }
-
-    const reservations = await Reservation.find(query)
-      .sort({ startTime: 1 })
-      .populate('userId', 'name username')
-      .populate('equipmentId', 'name');
     
+    const reservations = await Reservation.find(filterConditions)
+      .populate('user', 'name email')
+      .populate('equipment', 'name type location')
+      .sort({ date: 1, startTime: 1 });
+      
     res.json(reservations);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+    console.error('Error fetching filtered reservations:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// @route   GET /api/reservations/my
-// @desc    Get logged in user's reservations
-// @access  Private
-router.get('/my', protect, async (req, res) => {
+// GET reservations for a specific user
+router.get('/user/:userId', auth, async (req, res) => {
   try {
-    const reservations = await Reservation.find({ userId: req.user._id })
-      .sort({ startTime: 1 })
-      .populate('equipmentId', 'name');
+    const userId = req.params.userId;
     
+    // Verify user exists
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Get user's reservations
+    const reservations = await Reservation.find({ user: userId })
+      .populate('equipment', 'name type location')
+      .sort({ date: 1, startTime: 1 });
+      
     res.json(reservations);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+    console.error('Error fetching user reservations:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// @route   GET /api/reservations/upcoming
-// @desc    Get upcoming reservations (next 24 hours)
-// @access  Private
-router.get('/upcoming', protect, async (req, res) => {
+// GET reservations for a specific equipment
+router.get('/equipment/:equipmentId', auth, async (req, res) => {
   try {
-    const now = new Date();
-    const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const equipmentId = req.params.equipmentId;
     
-    let query = {
-      startTime: { $gte: now, $lte: next24Hours },
-      status: 'approved'
-    };
-    
-    if (req.user.role !== 'admin') {
-      query.userId = req.user._id;
+    // Verify equipment exists
+    const equipmentExists = await Equipment.findById(equipmentId);
+    if (!equipmentExists) {
+      return res.status(404).json({ message: 'Equipment not found' });
     }
     
-    const reservations = await Reservation.find(query)
-      .sort({ startTime: 1 })
-      .populate('userId', 'name username')
-      .populate('equipmentId', 'name');
-    
+    // Get equipment reservations
+    const reservations = await Reservation.find({ equipment: equipmentId })
+      .populate('user', 'name email')
+      .sort({ date: 1, startTime: 1 });
+      
     res.json(reservations);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+    console.error('Error fetching equipment reservations:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// @route   POST /api/reservations
-// @desc    Create a new reservation
-// @access  Private
-router.post('/', [
-  protect,
-  body('equipmentId').not().isEmpty().withMessage('장비를 선택해주세요'),
-  body('startTime').not().isEmpty().withMessage('시작 시간을 입력해주세요'),
-  body('endTime').not().isEmpty().withMessage('종료 시간을 입력해주세요'),
-  body('purpose').not().isEmpty().withMessage('사용 목적을 입력해주세요')
-], validateRequest, async (req, res) => {
-  try {
-    const { equipmentId, startTime, endTime, purpose } = req.body;
-    
-    // 장비 유효성 확인
-    const equipment = await Equipment.findById(equipmentId);
-    if (!equipment) {
-      return res.status(404).json({ message: '장비를 찾을 수 없습니다' });
-    }
-    
-    // 장비 사용 가능 여부 확인
-    if (!equipment.isAvailable) {
-      return res.status(400).json({ message: '현재 사용할 수 없는 장비입니다' });
-    }
-    
-    // 시간 유효성 확인
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const now = new Date();
-    
-    if (start >= end) {
-      return res.status(400).json({ message: '종료 시간은 시작 시간 이후여야 합니다' });
-    }
-    
-    if (start < now) {
-      return res.status(400).json({ message: '과거 시간에는 예약할 수 없습니다' });
-    }
-    
-    // 시간 중복 확인
-    const overlappingReservation = await Reservation.checkOverlap(equipmentId, start, end);
-    if (overlappingReservation) {
-      return res.status(400).json({ message: '해당 시간에는 이미 예약이 존재합니다' });
-    }
-    
-    // 새 예약 생성
-    const reservation = await Reservation.create({
-      userId: req.user._id,
-      equipmentId,
-      startTime: start,
-      endTime: end,
-      purpose,
-      status: 'approved' // 기본적으로 승인됨으로 설정
-    });
-    
-    const populatedReservation = await Reservation.findById(reservation._id)
-      .populate('userId', 'name username')
-      .populate('equipmentId', 'name');
-    
-    res.status(201).json(populatedReservation);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다' });
-  }
-});
-
-// @route   GET /api/reservations/:id
-// @desc    Get reservation by ID
-// @access  Private
-router.get('/:id', protect, async (req, res) => {
+// GET a single reservation by ID
+router.get('/:id', auth, async (req, res) => {
   try {
     const reservation = await Reservation.findById(req.params.id)
-      .populate('userId', 'name username')
-      .populate('equipmentId', 'name');
-    
+      .populate('user', 'name email')
+      .populate('equipment', 'name type location');
+      
     if (!reservation) {
-      return res.status(404).json({ message: '예약을 찾을 수 없습니다' });
-    }
-    
-    // 자신의 예약이거나 관리자만 조회 가능
-    if (req.user.role !== 'admin' && reservation.userId._id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: '다른 사용자의 예약을 조회할 권한이 없습니다' });
+      return res.status(404).json({ message: 'Reservation not found' });
     }
     
     res.json(reservation);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+    console.error('Error fetching reservation:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// @route   PUT /api/reservations/:id
-// @desc    Update reservation
-// @access  Private (owner or admin)
-router.put('/:id', protect, async (req, res) => {
+// POST create a new reservation
+router.post('/', auth, async (req, res) => {
   try {
-    const reservation = await Reservation.findById(req.params.id);
+    const { equipment, date, startTime, endTime, notes } = req.body;
     
-    if (!reservation) {
-      return res.status(404).json({ message: '예약을 찾을 수 없습니다' });
+    // Basic validation
+    if (!equipment || !date || !startTime || !endTime) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
     }
     
-    // 자신의 예약이거나 관리자만 수정 가능
-    if (req.user.role !== 'admin' && reservation.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: '다른 사용자의 예약을 수정할 권한이 없습니다' });
+    // Verify equipment exists
+    const equipmentExists = await Equipment.findById(equipment);
+    if (!equipmentExists) {
+      return res.status(404).json({ message: 'Equipment not found' });
     }
     
-    // 시간 변경이 있는 경우
-    if (req.body.startTime || req.body.endTime || req.body.equipmentId) {
-      const equipmentId = req.body.equipmentId || reservation.equipmentId;
-      const startTime = req.body.startTime ? new Date(req.body.startTime) : reservation.startTime;
-      const endTime = req.body.endTime ? new Date(req.body.endTime) : reservation.endTime;
-      const now = new Date();
-      
-      // 장비 유효성 확인
-      if (req.body.equipmentId) {
-        const equipment = await Equipment.findById(equipmentId);
-        if (!equipment) {
-          return res.status(404).json({ message: '장비를 찾을 수 없습니다' });
+    // Check for overlapping reservations
+    const overlappingReservations = await Reservation.find({
+      equipment,
+      date: new Date(date),
+      $or: [
+        { 
+          startTime: { $lt: endTime },
+          endTime: { $gt: startTime }
         }
-        
-        // 장비 사용 가능 여부 확인
-        if (!equipment.isAvailable) {
-          return res.status(400).json({ message: '현재 사용할 수 없는 장비입니다' });
-        }
-      }
-      
-      // 시간 유효성 확인
-      if (startTime >= endTime) {
-        return res.status(400).json({ message: '종료 시간은 시작 시간 이후여야 합니다' });
-      }
-      
-      if (startTime < now) {
-        return res.status(400).json({ message: '과거 시간으로 변경할 수 없습니다' });
-      }
-      
-      // 시간 중복 확인 (자기 자신 제외)
-      const overlappingReservation = await Reservation.checkOverlap(equipmentId, startTime, endTime, reservation._id);
-      if (overlappingReservation) {
-        return res.status(400).json({ message: '해당 시간에는 이미 예약이 존재합니다' });
-      }
-      
-      // 업데이트할 필드
-      if (req.body.equipmentId) reservation.equipmentId = equipmentId;
-      if (req.body.startTime) reservation.startTime = startTime;
-      if (req.body.endTime) reservation.endTime = endTime;
+      ]
+    });
+    
+    if (overlappingReservations.length > 0) {
+      return res.status(400).json({ 
+        message: 'This time slot is already booked',
+        conflicts: overlappingReservations
+      });
     }
     
-    // 기타 필드 업데이트
-    if (req.body.purpose) reservation.purpose = req.body.purpose;
-    if (req.body.status && req.user.role === 'admin') reservation.status = req.body.status;
+    // Create reservation
+    const newReservation = new Reservation({
+      user: req.user.id, // From auth middleware
+      equipment,
+      date: new Date(date),
+      startTime,
+      endTime,
+      notes: notes || ''
+    });
     
-    const updatedReservation = await reservation.save();
+    await newReservation.save();
     
-    const populatedReservation = await Reservation.findById(updatedReservation._id)
-      .populate('userId', 'name username')
-      .populate('equipmentId', 'name');
-    
-    res.json(populatedReservation);
+    // Populate details for response
+    const populatedReservation = await Reservation.findById(newReservation._id)
+      .populate('user', 'name email')
+      .populate('equipment', 'name type location');
+      
+    res.status(201).json(populatedReservation);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+    console.error('Error creating reservation:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// @route   PUT /api/reservations/:id/status
-// @desc    Update reservation status
-// @access  Admin only
-router.put('/:id/status', [protect, admin], async (req, res) => {
+// PUT update a reservation
+router.put('/:id', auth, async (req, res) => {
   try {
-    const reservation = await Reservation.findById(req.params.id);
+    const { equipment, date, startTime, endTime, notes } = req.body;
+    const reservationId = req.params.id;
     
+    // Verify reservation exists
+    const reservation = await Reservation.findById(reservationId);
     if (!reservation) {
-      return res.status(404).json({ message: '예약을 찾을 수 없습니다' });
+      return res.status(404).json({ message: 'Reservation not found' });
     }
     
-    // 상태 변경
-    if (['pending', 'approved', 'rejected', 'canceled'].includes(req.body.status)) {
-      reservation.status = req.body.status;
-      const updatedReservation = await reservation.save();
-      
-      const populatedReservation = await Reservation.findById(updatedReservation._id)
-        .populate('userId', 'name username')
-        .populate('equipmentId', 'name');
-      
-      res.json(populatedReservation);
-    } else {
-      return res.status(400).json({ message: '유효하지 않은 상태입니다' });
+    // Check if user is authorized to update reservation
+    if (reservation.user.toString() !== req.user.id && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to update this reservation' });
     }
+    
+    // If equipment or date/time is changing, check for conflicts
+    if (
+      (equipment && equipment !== reservation.equipment.toString()) ||
+      (date && new Date(date).toDateString() !== new Date(reservation.date).toDateString()) ||
+      (startTime && startTime !== reservation.startTime) ||
+      (endTime && endTime !== reservation.endTime)
+    ) {
+      // Check for overlapping reservations
+      const overlappingReservations = await Reservation.find({
+        _id: { $ne: reservationId }, // Exclude current reservation
+        equipment: equipment || reservation.equipment,
+        date: date ? new Date(date) : reservation.date,
+        $or: [
+          { 
+            startTime: { $lt: endTime || reservation.endTime },
+            endTime: { $gt: startTime || reservation.startTime }
+          }
+        ]
+      });
+      
+      if (overlappingReservations.length > 0) {
+        return res.status(400).json({ 
+          message: 'This time slot is already booked',
+          conflicts: overlappingReservations
+        });
+      }
+    }
+    
+    // Update fields
+    if (equipment) reservation.equipment = equipment;
+    if (date) reservation.date = new Date(date);
+    if (startTime) reservation.startTime = startTime;
+    if (endTime) reservation.endTime = endTime;
+    if (notes !== undefined) reservation.notes = notes;
+    
+    // Save updated reservation
+    await reservation.save();
+    
+    // Populate details for response
+    const updatedReservation = await Reservation.findById(reservationId)
+      .populate('user', 'name email')
+      .populate('equipment', 'name type location');
+      
+    res.json(updatedReservation);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+    console.error('Error updating reservation:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// @route   DELETE /api/reservations/:id
-// @desc    Delete reservation
-// @access  Private (owner or admin)
-router.delete('/:id', protect, async (req, res) => {
+// DELETE a reservation
+router.delete('/:id', auth, async (req, res) => {
   try {
-    const reservation = await Reservation.findById(req.params.id);
+    const reservationId = req.params.id;
     
+    // Verify reservation exists
+    const reservation = await Reservation.findById(reservationId);
     if (!reservation) {
-      return res.status(404).json({ message: '예약을 찾을 수 없습니다' });
+      return res.status(404).json({ message: 'Reservation not found' });
     }
     
-    // 자신의 예약이거나 관리자만 삭제 가능
-    if (req.user.role !== 'admin' && reservation.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: '다른 사용자의 예약을 삭제할 권한이 없습니다' });
+    // Check if user is authorized to delete reservation
+    if (reservation.user.toString() !== req.user.id && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to delete this reservation' });
     }
     
-    await reservation.deleteOne();
+    // Delete the reservation
+    await Reservation.findByIdAndDelete(reservationId);
     
-    res.json({ message: '예약이 삭제되었습니다' });
+    res.json({ message: 'Reservation deleted successfully' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+    console.error('Error deleting reservation:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET reservations for a date range
+router.get('/range/:startDate/:endDate', auth, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.params;
+    
+    // Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+    
+    // Get reservations in date range
+    const reservations = await Reservation.find({
+      date: {
+        $gte: start,
+        $lte: end
+      }
+    })
+    .populate('user', 'name email')
+    .populate('equipment', 'name type location')
+    .sort({ date: 1, startTime: 1 });
+    
+    res.json(reservations);
+  } catch (error) {
+    console.error('Error fetching reservation range:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
