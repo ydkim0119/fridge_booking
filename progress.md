@@ -2,7 +2,7 @@
 
 ## Project Goal
 
-The goal of this project is to develop a fridge booking system for managing and reserving fridge equipment in a school setting. The system includes a web application with a React frontend and a Node.js backend, allowing users to register, log in, and make reservations for various fridge equipment. The system also provides an admin panel for managing users and equipment, as well as a dashboard for viewing statistics and usage patterns.
+The goal of this project is to develop a refrigerator booking system for managing and reserving refrigeration equipment in the SQuIRL laboratory setting. The system includes a web application with a React frontend and a Node.js backend, allowing users to view and make reservations for various refrigeration equipment. The system also provides an admin panel for managing users and equipment.
 
 ## Current Status
 
@@ -10,41 +10,36 @@ The goal of this project is to develop a fridge booking system for managing and 
 
 The frontend of the project is well-developed using React and includes the following pages and components:
 
-- **Login Page**: Allows users to log in to the system with authentication.
-- **Registration Page**: Allows new users to register for an account.
-- **Dashboard**: Displays an overview of upcoming reservations and user-specific reservations.
+- **Dashboard**: Displays an overview of upcoming reservations and equipment status.
 - **Calendar View**: Provides a calendar interface for viewing and managing reservations. Supports monthly, weekly, and daily views with mobile optimization.
-- **Stats Dashboard**: Displays usage statistics and patterns for the fridge equipment.
-- **Profile Page**: Allows users to view and update their profile information.
-- **Admin Panel**: Provides an interface for managing users and equipment.
+- **Stats Dashboard**: Displays usage statistics and patterns for the refrigeration equipment.
+- **Profile Page**: Shows user details.
+- **Admin Panel**: Provides an interface for managing users and equipment without requiring admin privileges.
 - **Layout Component**: Reusable layout with sidebar navigation for the application.
 - **Sidebar Component**: Navigation component that provides links to different areas of the application.
-- **Auth Context**: Provides authentication state and functions throughout the application.
 
 ### Backend
 
 The backend of the project is implemented using Node.js and Express and includes the following components:
 
-- **Authentication System**: Complete routes for user registration, login, and token verification.
-- **User Management**: Routes for managing user information, updating profiles, and role-based access.
+- **User Management**: Routes for managing user information.
 - **Equipment Management**: Routes for creating, updating, deleting, and retrieving equipment information.
 - **Reservation Management**: Comprehensive routes for creating, updating, viewing, and deleting reservations.
 - **Statistics**: Routes for retrieving usage statistics and equipment utilization patterns.
 - **Database Models**: Mongoose models for Users, Equipment, and Reservations.
-- **Middleware**: Authentication, authorization (admin), and validation middleware.
-- **Utility Functions**: Database connection and JWT token generation utilities.
+- **Middleware**: Validation middleware.
+- **Utility Functions**: Database connection utilities.
 
 ### API Integration
 
-- **API Service Layer**: Added a centralized API service for all frontend-backend communications.
-- **Authentication Integration**: Connected AuthContext with backend API for proper authentication.
-- **Reservation Filtering**: Implemented backend and frontend filtering for reservations by user and equipment.
+- **API Service Layer**: Centralized API service for all frontend-backend communications.
+- **Reservation Filtering**: Implemented filtering for reservations by user and equipment.
 - **CORS Configuration**: Improved CORS settings for better security and cross-origin communication.
 - **Error Handling**: Enhanced error handling for API requests and responses.
 
 ### Mobile Support
 
-- **Responsive Design**: All components are now fully responsive for various screen sizes.
+- **Responsive Design**: All components are fully responsive for various screen sizes.
 - **Mobile-optimized Calendar**: The calendar view automatically adapts to mobile screens:
   - Switches to daily view on small screens
   - Adjusts layout for touch-friendly interface
@@ -54,13 +49,13 @@ The backend of the project is implemented using Node.js and Express and includes
 
 ### Recent Improvements
 
-- **Enhanced Calendar View**: Improved user experience with better mobile support and date handling.
-- **Optimized Filtering**: Added "My Reservations" quick filter for easy access to personal bookings.
-- **Updated Schema**: Modified the Reservation model to include title field and improve datetime handling.
-- **API Refinements**: Enhanced API endpoints for more accurate filtering and better data retrieval.
-- **Date Range Support**: Added ability to query reservations by date ranges.
-- **UI Enhancements**: Improved form layout, especially on mobile devices.
-- **Bug Fixes**: Fixed issues with parameter handling between client and server.
+- **Removed Authentication Requirements**: Authentication has been removed to allow direct access to the system without login.
+- **System Name Updated**: Changed system name to "SQuIRL Refrigerator Booking System".
+- **Direct Calendar Access**: Made the calendar view immediately accessible as the landing page.
+- **User Selection in Reservations**: Added user selection in reservation form to allow making reservations for any user.
+- **Equipment Management**: Enhanced equipment management with color coding and simplified controls.
+- **API-less Operation**: Implemented client-side data storage to eliminate API dependencies temporarily.
+- **Admin Access for All**: Removed admin role restrictions to allow everyone to manage users and equipment.
 
 ### Deployment
 
@@ -72,21 +67,15 @@ The backend of the project is implemented using Node.js and Express and includes
 
 ## Next Steps
 
-### Pending Tasks
-
-- **User Documentation**: Create comprehensive user guide for the application.
-- **Real-time Updates**: Implement WebSocket support for real-time reservation updates.
-- **Testing**: Add comprehensive testing for both frontend and backend components.
-- **Pagination**: Implement pagination for large data sets.
-- **Performance Optimization**: Optimize database queries for better performance.
-
 ### Potential Improvements
 
-- **Notification System**: Implement a notification system to alert users of upcoming reservations and changes.
-- **Advanced Filtering**: Add more advanced filtering options for the calendar view to allow users to filter by date range.
-- **Reporting**: Implement reporting features to generate detailed reports on equipment usage and reservation patterns.
-- **User Roles**: Enhance the user roles and permissions system to provide more granular control over access to different features.
-- **Offline Support**: Add progressive web app features for basic offline functionality.
+- **Offline Support**: Consider adding basic offline functionality for viewing existing reservations.
+- **Data Export**: Add ability to export reservation data.
+- **Email Notifications**: Implement email notifications for reservations.
+- **Recurring Reservations**: Add support for recurring reservations.
+- **Conflict Resolution**: Enhance the system's ability to detect and handle reservation conflicts.
+- **User Preferences**: Allow users to save preferences for equipment and time slots.
+- **Better Equipment Details**: Include more detailed information about equipment in the equipment list.
 
 ## Implementation Details
 
@@ -99,39 +88,35 @@ The backend of the project is implemented using Node.js and Express and includes
    - Filtering capabilities by user and equipment
    - Mobile-optimized views
 
-2. **User Authentication**:
-   - Login and registration system
-   - JWT-based authentication
-   - Role-based access control
-
-3. **Equipment Management**:
+2. **Equipment Management**:
    - CRUD operations for equipment
    - Equipment categorization and details
+   - Color coding for easy identification
 
-4. **Reservation System**:
+3. **Reservation System**:
    - Date and time slot selection
-   - Conflict checking
    - User and equipment association
    - Filtering by user and equipment
+   - Title and notes for reservations
 
-5. **Responsive Design**:
+4. **Responsive Design**:
    - Works on both desktop and mobile devices
    - Adaptive layouts for different screen sizes
    - Touch-optimized controls on mobile
 
 ### Technical Implementation
 
-- **Frontend**: React with hooks, context API for state management
+- **Frontend**: React with hooks for state management
 - **Backend**: Node.js with Express
 - **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT tokens
 - **API Communication**: Axios with interceptors
 - **Styling**: Tailwind CSS
-- **Deployment**: Docker containerization with Render configuration
+- **Deployment**: Render cloud platform
 
 ## Current Limitations
 
-- Some API endpoints may need further testing and refinement
-- Frontend and backend integration needs more thorough testing
+- No real authentication system (simplified for access without login)
+- Backend API endpoints need more thorough testing
+- No persistent data storage in the current client-side implementation
 - No offline capability (requires internet connection)
 - Limited data export capabilities
