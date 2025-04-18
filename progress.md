@@ -21,8 +21,6 @@ The frontend of the project is well-developed using React and includes the follo
 - **Sidebar Component**: Navigation component that provides links to different areas of the application.
 - **Auth Context**: Provides authentication state and functions throughout the application.
 
-All frontend components are implemented and are using dummy data for display purposes. The application utilizes React Router for navigation and Tailwind CSS for styling.
-
 ### Backend
 
 The backend of the project is implemented using Node.js and Express and includes the following components:
@@ -36,6 +34,14 @@ The backend of the project is implemented using Node.js and Express and includes
 - **Middleware**: Authentication, authorization (admin), and validation middleware.
 - **Utility Functions**: Database connection and JWT token generation utilities.
 
+### API Integration
+
+- **API Service Layer**: Added a centralized API service for all frontend-backend communications.
+- **Authentication Integration**: Connected AuthContext with backend API for proper authentication.
+- **Reservation Filtering**: Implemented backend and frontend filtering for reservations by user and equipment.
+- **CORS Configuration**: Improved CORS settings for better security and cross-origin communication.
+- **Error Handling**: Enhanced error handling for API requests and responses.
+
 ### Docker and Deployment
 
 - **Docker Configuration**: Dockerfile and docker-compose.yml for containerized deployment.
@@ -45,11 +51,9 @@ The backend of the project is implemented using Node.js and Express and includes
 
 ### Pending Tasks
 
-- **Connect Frontend and Backend**: Integrate the frontend with the backend API for real-time data fetching and updates.
-- **Implement User Filtering**: Add ability to filter reservations by user and equipment as requested.
-- **Mobile Optimization**: Further improve the responsive design for better mobile experience.
-- **Add Calendar Filtering**: Implement the ability to filter calendar view by user and equipment.
+- **Fine-tune API Integration**: Ensure all API endpoints are properly connected and functioning.
 - **Testing**: Add comprehensive testing for both frontend and backend components.
+- **Mobile Optimization**: Further improve the responsive design for better mobile experience.
 - **Documentation**: Add API documentation and user guides.
 
 ### Potential Improvements
@@ -65,9 +69,10 @@ The backend of the project is implemented using Node.js and Express and includes
 ### Key Features Implemented
 
 1. **Calendar Interface**: 
-   - Monthly and weekly calendar views
+   - Monthly, weekly, and daily calendar views
    - Visual representation of reservations
    - Interface for creating and managing reservations
+   - Filtering capabilities by user and equipment
 
 2. **User Authentication**:
    - Login and registration system
@@ -82,6 +87,7 @@ The backend of the project is implemented using Node.js and Express and includes
    - Date and time slot selection
    - Conflict checking
    - User and equipment association
+   - Filtering by user and equipment
 
 5. **Responsive Design**:
    - Works on both desktop and mobile devices
@@ -92,13 +98,14 @@ The backend of the project is implemented using Node.js and Express and includes
 - **Frontend**: React with hooks, context API for state management
 - **Backend**: Node.js with Express
 - **Database**: MongoDB with Mongoose ODM
+- **Authentication**: JWT tokens
 - **Styling**: Tailwind CSS
 - **Deployment**: Docker containerization with Render configuration
 
 ## Current Limitations
 
-- Frontend and backend are not yet integrated - currently using dummy data
-- Real-time notifications not yet implemented
-- Advanced filtering capabilities still need to be implemented
-- Mobile experience needs further optimization
+- Some API endpoints may need further testing and refinement
+- More comprehensive error handling needed in some components
+- Mobile experience still needs some optimization
 - Testing suite not yet implemented
+- Frontend and backend integration needs more thorough testing
