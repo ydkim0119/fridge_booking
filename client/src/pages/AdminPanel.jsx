@@ -1,340 +1,442 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import axios from 'axios'
-import toast from 'react-hot-toast'
-import { Tab } from '@headlessui/react'
+import { toast } from 'react-hot-toast'
+import { Dialog, Transition } from '@headlessui/react'
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 
-function classNames(...classes) {
-  return classes.filter(Boolean).join(' ')
-}
-
-function AdminPanel() {
-  const [users, setUsers] = useState([])
-  const [equipment, setEquipment] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
+export default function AdminPanel() {
+  // 탭 관련 상태
+  const [activeTab, setActiveTab] = useState('users')
   
-  // 장비 생성을 위한 폼 데이터
-  const [equipmentForm, setEquipmentForm] = useState({
+  // 사용자 관련 상태
+  const [users, setUsers] = useState([])
+  const [userModalOpen, setUserModalOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [userFormData, setUserFormData] = useState({
     name: '',
-    description: '',
-    isAvailable: true
+    email: '',
+    department: '',
+    role: 'user',
+    password: '',
   })
   
+  // 장비 관련 상태
+  const [equipment, setEquipment] = useState([])
+  const [equipmentModalOpen, setEquipmentModalOpen] = useState(false)
+  const [selectedEquipment, setSelectedEquipment] = useState(null)
+  const [equipmentFormData, setEquipmentFormData] = useState({
+    name: '',
+    description: '',
+    location: '',
+    color: '#3B82F6',
+  })
+  
+  // 로딩 상태
+  const [loading, setLoading] = useState(true)
+
+  // 테스트용 더미 데이터
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true)
-        
-        // 사용자 데이터 가져오기
-        const usersRes = await axios.get('/api/users')
-        setUsers(usersRes.data)
-        
-        // 장비 데이터 가져오기
-        const equipmentRes = await axios.get('/api/equipment')
-        setEquipment(equipmentRes.data)
-        
-        setIsLoading(false)
-      } catch (error) {
-        console.error('데이터 가져오기 오류:', error)
-        toast.error('데이터를 불러오는 중 오류가 발생했습니다.')
-        setIsLoading(false)
-      }
-    }
+    // 실제 API가 구현되기 전에 더미 데이터로 시각화
+    const usersData = [
+      { id: 1, name: '김철수', email: 'user1@example.com', department: '화학과', role: 'user' },
+      { id: 2, name: '박영희', email: 'user2@example.com', department: '생물학과', role: 'user' },
+      { id: 3, name: '이지훈', email: 'user3@example.com', department: '물리학과', role: 'user' },
+      { id: 4, name: '정민지', email: 'admin@example.com', department: '관리부서', role: 'admin' },
+    ]
     
-    fetchData()
+    const equipmentData = [
+      { id: 1, name: '냉장고 1', description: '일반용 냉장고', location: '1층 실험실', color: '#3B82F6' },
+      { id: 2, name: '냉장고 2', description: '식품용 냉장고', location: '2층 실험실', color: '#10B981' },
+      { id: 3, name: '냉장고 3', description: '시약용 냉장고', location: '2층 실험실', color: '#F59E0B' },
+      { id: 4, name: '냉장고 4', description: '시료 보관용', location: '3층 실험실', color: '#EF4444' },
+      { id: 5, name: '초저온냉장고', description: '-80℃ 보관용', location: '지하 1층', color: '#8B5CF6' },
+    ]
+    
+    setUsers(usersData)
+    setEquipment(equipmentData)
+    setLoading(false)
   }, [])
 
-  // 장비 폼 변경 핸들러
-  const handleEquipmentFormChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setEquipmentForm(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
+  // 사용자 관련 함수
+  const handleUserFormChange = (e) => {
+    const { name, value } = e.target
+    setUserFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  // 장비 생성 함수
-  const handleCreateEquipment = async (e) => {
+  const openUserModal = (user = null) => {
+    if (user) {
+      setSelectedUser(user)
+      setUserFormData({
+        name: user.name,
+        email: user.email,
+        department: user.department,
+        role: user.role,
+        password: '',
+      })
+    } else {
+      setSelectedUser(null)
+      setUserFormData({
+        name: '',
+        email: '',
+        department: '',
+        role: 'user',
+        password: '',
+      })
+    }
+    setUserModalOpen(true)
+  }
+
+  const handleUserSubmit = async (e) => {
     e.preventDefault()
-    
-    try {
-      await axios.post('/api/equipment', equipmentForm)
-      toast.success('장비가 생성되었습니다.')
-      
-      // 폼 초기화
-      setEquipmentForm({
+    toast.success(selectedUser ? '사용자 정보가 수정되었습니다.' : '새 사용자가 생성되었습니다.')
+    setUserModalOpen(false)
+  }
+
+  const handleDeleteUser = async (id) => {
+    const confirmed = window.confirm('정말로 이 사용자를 삭제하시겠습니까?')
+    if (confirmed) {
+      setUsers(users.filter(user => user.id !== id))
+      toast.success('사용자가 삭제되었습니다.')
+    }
+  }
+
+  // 장비 관련 함수
+  const handleEquipmentFormChange = (e) => {
+    const { name, value } = e.target
+    setEquipmentFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const openEquipmentModal = (equip = null) => {
+    if (equip) {
+      setSelectedEquipment(equip)
+      setEquipmentFormData({
+        name: equip.name,
+        description: equip.description,
+        location: equip.location,
+        color: equip.color,
+      })
+    } else {
+      setSelectedEquipment(null)
+      setEquipmentFormData({
         name: '',
         description: '',
-        isAvailable: true
+        location: '',
+        color: '#3B82F6',
       })
-      
-      // 데이터 새로고침
-      const equipmentRes = await axios.get('/api/equipment')
-      setEquipment(equipmentRes.data)
-    } catch (error) {
-      console.error('장비 생성 오류:', error)
-      toast.error(error.response?.data?.message || '장비 생성 중 오류가 발생했습니다.')
     }
+    setEquipmentModalOpen(true)
   }
 
-  // 장비 상태 변경 함수
-  const handleToggleEquipmentStatus = async (id, isAvailable) => {
-    try {
-      await axios.put(`/api/equipment/${id}`, { isAvailable: !isAvailable })
-      
-      // 데이터 새로고침
-      const equipmentRes = await axios.get('/api/equipment')
-      setEquipment(equipmentRes.data)
-      
-      toast.success('장비 상태가 변경되었습니다.')
-    } catch (error) {
-      console.error('장비 상태 변경 오류:', error)
-      toast.error('장비 상태 변경 중 오류가 발생했습니다.')
-    }
+  const handleEquipmentSubmit = async (e) => {
+    e.preventDefault()
+    toast.success(selectedEquipment ? '장비 정보가 수정되었습니다.' : '새 장비가 생성되었습니다.')
+    setEquipmentModalOpen(false)
   }
 
-  // 장비 삭제 함수
   const handleDeleteEquipment = async (id) => {
-    if (!window.confirm('정말 이 장비를 삭제하시겠습니까? 관련 예약도 모두 삭제됩니다.')) return
-    
-    try {
-      await axios.delete(`/api/equipment/${id}`)
-      
-      // 데이터 새로고침
-      const equipmentRes = await axios.get('/api/equipment')
-      setEquipment(equipmentRes.data)
-      
+    const confirmed = window.confirm('정말로 이 장비를 삭제하시겠습니까?')
+    if (confirmed) {
+      setEquipment(equipment.filter(equip => equip.id !== id))
       toast.success('장비가 삭제되었습니다.')
-    } catch (error) {
-      console.error('장비 삭제 오류:', error)
-      toast.error('장비 삭제 중 오류가 발생했습니다.')
     }
   }
 
-  // 사용자 역할 변경 함수 (admin/user)
-  const handleToggleUserRole = async (id, currentRole) => {
-    const newRole = currentRole === 'admin' ? 'user' : 'admin'
-    
-    try {
-      await axios.put(`/api/users/${id}/role`, { role: newRole })
-      
-      // 데이터 새로고침
-      const usersRes = await axios.get('/api/users')
-      setUsers(usersRes.data)
-      
-      toast.success(`사용자 권한이 ${newRole === 'admin' ? '관리자로' : '일반 사용자로'} 변경되었습니다.`)
-    } catch (error) {
-      console.error('사용자 역할 변경 오류:', error)
-      toast.error('사용자 역할 변경 중 오류가 발생했습니다.')
-    }
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p>데이터 로딩 중...</p>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 bg-blue-50">
-          <h2 className="text-lg font-medium text-gray-900">
-            관리자 패널
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            장비와 사용자를 관리합니다.
-          </p>
+      <h1 className="text-2xl font-semibold">관리자 패널</h1>
+      
+      {/* 탭 메뉴 */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+              ${activeTab === 'users'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+            `}
+          >
+            사용자 관리
+          </button>
+          <button
+            onClick={() => setActiveTab('equipment')}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+              ${activeTab === 'equipment'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+            `}
+          >
+            장비 관리
+          </button>
+        </nav>
+      </div>
+      
+      {/* 사용자 관리 탭 */}
+      {activeTab === 'users' && (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <h2 className="text-lg font-medium text-gray-900">사용자 목록</h2>
+            <button
+              type="button"
+              onClick={() => openUserModal()}
+              className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
+              새 사용자
+            </button>
+          </div>
+          <div className="border-t border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서/학과</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">권한</th>
+                  <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.map((user) => (
+                  <tr key={user.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {user.role === 'admin' ? '관리자' : '사용자'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => openUserModal(user)}
+                        className="text-blue-600 hover:text-blue-900 mr-4"
+                      >
+                        <PencilIcon className="h-5 w-5" aria-hidden="true" />
+                        <span className="sr-only">Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <TrashIcon className="h-5 w-5" aria-hidden="true" />
+                        <span className="sr-only">Delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-        
-        <div className="border-t border-gray-200">
-          <Tab.Group>
-            <Tab.List className="flex border-b border-gray-200">
-              <Tab
-                className={({ selected }) =>
-                  classNames(
-                    'py-4 px-6 text-sm font-medium',
-                    selected
-                      ? 'border-blue-500 border-b-2 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  )
-                }
-              >
-                장비 관리
-              </Tab>
-              <Tab
-                className={({ selected }) =>
-                  classNames(
-                    'py-4 px-6 text-sm font-medium',
-                    selected
-                      ? 'border-blue-500 border-b-2 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  )
-                }
-              >
-                사용자 관리
-              </Tab>
-            </Tab.List>
-            <Tab.Panels>
-              {/* 장비 관리 패널 */}
-              <Tab.Panel className="p-6">
-                <div className="space-y-6">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">새 장비 등록</h3>
-                    <form onSubmit={handleCreateEquipment} className="space-y-4">
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">장비명</label>
-                        <input
-                          type="text"
-                          id="name"
-                          name="name"
-                          required
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                          value={equipmentForm.name}
-                          onChange={handleEquipmentFormChange}
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">장비 설명</label>
-                        <textarea
-                          id="description"
-                          name="description"
-                          rows="3"
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                          value={equipmentForm.description}
-                          onChange={handleEquipmentFormChange}
-                        />
-                      </div>
-                      
+      )}
+      
+      {/* 장비 관리 탭 */}
+      {activeTab === 'equipment' && (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <h2 className="text-lg font-medium text-gray-900">장비 목록</h2>
+            <button
+              type="button"
+              onClick={() => openEquipmentModal()}
+              className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
+              새 장비
+            </button>
+          </div>
+          <div className="border-t border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">장비명</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">위치</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">색상</th>
+                  <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {equipment.map((equip) => (
+                  <tr key={equip.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{equip.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{equip.description}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{equip.location}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center">
-                        <input
-                          id="isAvailable"
-                          name="isAvailable"
-                          type="checkbox"
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          checked={equipmentForm.isAvailable}
-                          onChange={handleEquipmentFormChange}
-                        />
-                        <label htmlFor="isAvailable" className="ml-2 block text-sm text-gray-700">사용 가능 상태</label>
+                        <div
+                          className="h-4 w-4 rounded-full mr-2"
+                          style={{ backgroundColor: equip.color }}
+                        ></div>
+                        {equip.color}
                       </div>
-                      
-                      <div>
-                        <button
-                          type="submit"
-                          className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          장비 등록
-                        </button>
-                      </div>
-                    </form>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => openEquipmentModal(equip)}
+                        className="text-blue-600 hover:text-blue-900 mr-4"
+                      >
+                        <PencilIcon className="h-5 w-5" aria-hidden="true" />
+                        <span className="sr-only">Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEquipment(equip.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <TrashIcon className="h-5 w-5" aria-hidden="true" />
+                        <span className="sr-only">Delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      
+      {/* 사용자 모달 */}
+      <Transition.Root show={userModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={setUserModalOpen}>
+          <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 z-10 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" enterTo="opacity-100 translate-y-0 sm:scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 translate-y-0 sm:scale-100" leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                  <div>
+                    <div className="mt-3 text-center sm:mt-5">
+                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                        {selectedUser ? '사용자 수정' : '새 사용자 생성'}
+                      </Dialog.Title>
+                    </div>
                   </div>
                   
+                  <form onSubmit={handleUserSubmit} className="mt-5 space-y-4">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700">이름</label>
+                      <input type="text" name="name" id="name" required value={userFormData.name} onChange={handleUserFormChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">이메일</label>
+                      <input type="email" name="email" id="email" required disabled={selectedUser} value={userFormData.email} 
+                        onChange={handleUserFormChange} className={`mt-1 block w-full rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                          selectedUser ? 'border-gray-300 bg-gray-100' : 'border-gray-300'}`} />
+                      {selectedUser && (<p className="mt-1 text-xs text-gray-500">이메일은 변경할 수 없습니다.</p>)}
+                    </div>
+                    <div>
+                      <label htmlFor="department" className="block text-sm font-medium text-gray-700">부서/학과</label>
+                      <input type="text" name="department" id="department" required value={userFormData.department} 
+                        onChange={handleUserFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                    </div>
+                    <div>
+                      <label htmlFor="role" className="block text-sm font-medium text-gray-700">권한</label>
+                      <select id="role" name="role" value={userFormData.role} onChange={handleUserFormChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        <option value="user">사용자</option>
+                        <option value="admin">관리자</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                        {selectedUser ? '새 비밀번호 (변경 시에만 입력)' : '비밀번호'}
+                      </label>
+                      <input type="password" name="password" id="password" required={!selectedUser} 
+                        value={userFormData.password} onChange={handleUserFormChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                    </div>
+                    <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                      <button type="submit" className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:col-start-2">
+                        {selectedUser ? '저장' : '생성'}
+                      </button>
+                      <button type="button" onClick={() => setUserModalOpen(false)}
+                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">
+                        취소
+                      </button>
+                    </div>
+                  </form>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
+      
+      {/* 장비 모달 */}
+      <Transition.Root show={equipmentModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={setEquipmentModalOpen}>
+          <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 z-10 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" enterTo="opacity-100 translate-y-0 sm:scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 translate-y-0 sm:scale-100" leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">장비 목록</h3>
-                    {isLoading ? (
-                      <div className="flex items-center justify-center h-32">
-                        <p className="text-gray-500">로딩 중...</p>
-                      </div>
-                    ) : equipment.length === 0 ? (
-                      <div className="bg-gray-50 py-8 px-4 text-center rounded-lg">
-                        <p className="text-gray-500">등록된 장비가 없습니다.</p>
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">장비명</th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명</th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
-                              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {equipment.map((item) => (
-                              <tr key={item._id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
-                                <td className="px-6 py-4 text-sm text-gray-500">{item.description}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                    {item.isAvailable ? '사용 가능' : '사용 불가'}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                  <button
-                                    onClick={() => handleToggleEquipmentStatus(item._id, item.isAvailable)}
-                                    className="text-blue-600 hover:text-blue-900 mr-4"
-                                  >
-                                    {item.isAvailable ? '비활성화' : '활성화'}
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteEquipment(item._id)}
-                                    className="text-red-600 hover:text-red-900"
-                                  >
-                                    삭제
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                    <div className="mt-3 text-center sm:mt-5">
+                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                        {selectedEquipment ? '장비 수정' : '새 장비 생성'}
+                      </Dialog.Title>
+                    </div>
                   </div>
-                </div>
-              </Tab.Panel>
-              
-              {/* 사용자 관리 패널 */}
-              <Tab.Panel className="p-6">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">사용자 목록</h3>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center h-32">
-                      <p className="text-gray-500">로딩 중...</p>
+                  
+                  <form onSubmit={handleEquipmentSubmit} className="mt-5 space-y-4">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700">장비명</label>
+                      <input type="text" name="name" id="name" required value={equipmentFormData.name} 
+                        onChange={handleEquipmentFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                     </div>
-                  ) : users.length === 0 ? (
-                    <div className="bg-gray-50 py-8 px-4 text-center rounded-lg">
-                      <p className="text-gray-500">등록된 사용자가 없습니다.</p>
+                    <div>
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">설명</label>
+                      <input type="text" name="description" id="description" value={equipmentFormData.description} 
+                        onChange={handleEquipmentFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                     </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">아이디</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">권한</th>
-                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {users.map((user) => (
-                            <tr key={user._id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.username}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.name}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                                  {user.role === 'admin' ? '관리자' : '일반 사용자'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button
-                                  onClick={() => handleToggleUserRole(user._id, user.role)}
-                                  className="text-blue-600 hover:text-blue-900"
-                                >
-                                  {user.role === 'admin' ? '일반 사용자로 변경' : '관리자로 변경'}
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div>
+                      <label htmlFor="location" className="block text-sm font-medium text-gray-700">위치</label>
+                      <input type="text" name="location" id="location" value={equipmentFormData.location} 
+                        onChange={handleEquipmentFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                     </div>
-                  )}
-                </div>
-              </Tab.Panel>
-            </Tab.Panels>
-          </Tab.Group>
-        </div>
-      </div>
+                    <div>
+                      <label htmlFor="color" className="block text-sm font-medium text-gray-700">색상</label>
+                      <div className="flex items-center mt-1">
+                        <input type="color" name="color" id="color" value={equipmentFormData.color} 
+                          onChange={handleEquipmentFormChange} className="h-8 w-8 rounded-md border-gray-300 shadow-sm" />
+                        <input type="text" name="color" value={equipmentFormData.color} 
+                          onChange={handleEquipmentFormChange} className="ml-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                      </div>
+                    </div>
+                    <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                      <button type="submit" className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:col-start-2">
+                        {selectedEquipment ? '저장' : '생성'}
+                      </button>
+                      <button type="button" onClick={() => setEquipmentModalOpen(false)}
+                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">
+                        취소
+                      </button>
+                    </div>
+                  </form>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
     </div>
   )
 }
-
-export default AdminPanel
