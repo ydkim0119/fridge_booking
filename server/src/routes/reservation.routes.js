@@ -4,11 +4,10 @@ const mongoose = require('mongoose');
 const Reservation = require('../models/Reservation');
 const Equipment = require('../models/Equipment');
 const User = require('../models/User');
-const auth = require('../middleware/auth');
-const admin = require('../middleware/admin');
+const { protect, admin } = require('../middleware/auth');
 
 // GET all reservations
-router.get('/', auth, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const reservations = await Reservation.find()
       .populate('user', 'name email')
@@ -21,7 +20,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // GET filtered reservations - 필터링 기능 추가
-router.get('/filter', auth, async (req, res) => {
+router.get('/filter', protect, async (req, res) => {
   try {
     const { userId, equipmentId, startDate, endDate } = req.query;
     
@@ -62,7 +61,7 @@ router.get('/filter', auth, async (req, res) => {
 });
 
 // GET reservations for a specific user
-router.get('/user/:userId', auth, async (req, res) => {
+router.get('/user/:userId', protect, async (req, res) => {
   try {
     const userId = req.params.userId;
     
@@ -85,7 +84,7 @@ router.get('/user/:userId', auth, async (req, res) => {
 });
 
 // GET reservations for a specific equipment
-router.get('/equipment/:equipmentId', auth, async (req, res) => {
+router.get('/equipment/:equipmentId', protect, async (req, res) => {
   try {
     const equipmentId = req.params.equipmentId;
     
@@ -108,7 +107,7 @@ router.get('/equipment/:equipmentId', auth, async (req, res) => {
 });
 
 // GET a single reservation by ID
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', protect, async (req, res) => {
   try {
     const reservation = await Reservation.findById(req.params.id)
       .populate('user', 'name email')
@@ -126,7 +125,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // POST create a new reservation
-router.post('/', auth, async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const { equipment, date, startTime, endTime, notes } = req.body;
     
@@ -185,7 +184,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // PUT update a reservation
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', protect, async (req, res) => {
   try {
     const { equipment, date, startTime, endTime, notes } = req.body;
     const reservationId = req.params.id;
@@ -252,7 +251,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // DELETE a reservation
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', protect, async (req, res) => {
   try {
     const reservationId = req.params.id;
     
@@ -278,7 +277,7 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 // GET reservations for a date range
-router.get('/range/:startDate/:endDate', auth, async (req, res) => {
+router.get('/range/:startDate/:endDate', protect, async (req, res) => {
   try {
     const { startDate, endDate } = req.params;
     
