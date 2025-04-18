@@ -24,7 +24,7 @@ services:
 
 databases:
   - name: fridge-booking-db
-    plan: starter
+    plan: free
     ipAllowList: # only allow connections from services in this Render account
       - source: 0.0.0.0/0
         description: everywhere
