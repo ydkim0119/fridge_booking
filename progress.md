@@ -52,28 +52,33 @@ The backend of the project is implemented using Node.js and Express and includes
 - **Touch-friendly Forms**: Form inputs and controls are properly sized for touch interaction.
 - **Mobile Navigation**: Implemented mobile-friendly navigation with slide-out sidebar.
 
-### Docker and Deployment
+### Recent Improvements
 
-- **Docker Configuration**: Dockerfile and docker-compose.yml for containerized deployment.
-- **Render Configuration**: render.yaml for deploying the application on Render's free plan.
+- **Enhanced Calendar View**: Improved user experience with better mobile support and date handling.
+- **Optimized Filtering**: Added "My Reservations" quick filter for easy access to personal bookings.
+- **Updated Schema**: Modified the Reservation model to include title field and improve datetime handling.
+- **API Refinements**: Enhanced API endpoints for more accurate filtering and better data retrieval.
+- **Date Range Support**: Added ability to query reservations by date ranges.
+- **UI Enhancements**: Improved form layout, especially on mobile devices.
+- **Bug Fixes**: Fixed issues with parameter handling between client and server.
 
-### Recent Deployment Fixes
+### Deployment
 
 - **MongoDB Connection**: Fixed MongoDB authentication issues by updating the connection logic and implementing a more robust connection handling.
 - **Static File Paths**: Corrected the static file path issues by ensuring the server correctly serves files from the build output directory.
 - **Port Binding**: Updated the server to listen on all interfaces (0.0.0.0) to enable Render to access the server.
-- **Environment Variables**: Added example environment variables file for Render deployment.
-- **Fallback to Dummy Data**: Implemented a feature to allow the server to continue running with dummy data if MongoDB connection fails.
+- **Environment Variables**: Added environment variables for Render deployment.
+- **Render Deployment**: Successfully deployed to Render's free plan.
 
 ## Next Steps
 
 ### Pending Tasks
 
-- **MongoDB Setup**: Set up a MongoDB database in the cloud (e.g. MongoDB Atlas) for production deployment.
-- **Environment Configuration**: Configure environment variables in the Render dashboard.
-- **Fine-tune API Integration**: Ensure all API endpoints are properly connected and functioning.
+- **User Documentation**: Create comprehensive user guide for the application.
+- **Real-time Updates**: Implement WebSocket support for real-time reservation updates.
 - **Testing**: Add comprehensive testing for both frontend and backend components.
-- **Documentation**: Add API documentation and user guides.
+- **Pagination**: Implement pagination for large data sets.
+- **Performance Optimization**: Optimize database queries for better performance.
 
 ### Potential Improvements
 
@@ -81,7 +86,7 @@ The backend of the project is implemented using Node.js and Express and includes
 - **Advanced Filtering**: Add more advanced filtering options for the calendar view to allow users to filter by date range.
 - **Reporting**: Implement reporting features to generate detailed reports on equipment usage and reservation patterns.
 - **User Roles**: Enhance the user roles and permissions system to provide more granular control over access to different features.
-- **Real-time Updates**: Add WebSocket support for real-time updates on reservation changes.
+- **Offline Support**: Add progressive web app features for basic offline functionality.
 
 ## Implementation Details
 
@@ -130,4 +135,3 @@ The backend of the project is implemented using Node.js and Express and includes
 - Frontend and backend integration needs more thorough testing
 - No offline capability (requires internet connection)
 - Limited data export capabilities
-- Requires MongoDB connection or fallback to dummy data mode
