@@ -7,9 +7,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import koLocale from '@fullcalendar/core/locales/ko'
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
-import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
-import apiService from '../services/api'
 
 export default function CalendarView() {
   const [reservations, setReservations] = useState([])
@@ -23,7 +21,6 @@ export default function CalendarView() {
   const [selectedEquipment, setSelectedEquipment] = useState('')
   const [loading, setLoading] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-  const { user } = useAuth()
   const calendarRef = useRef(null)
 
   // 모바일 화면 감지
@@ -44,115 +41,178 @@ export default function CalendarView() {
 
   // 초기 데이터 로딩
   useEffect(() => {
-    fetchData()
+    // 더미 데이터로 초기화 (실제 환경에서는 API 호출로 변경)
+    const usersData = [
+      { id: 1, name: '김철수', email: 'user1@example.com', department: '화학과' },
+      { id: 2, name: '박영희', email: 'user2@example.com', department: '생물학과' },
+      { id: 3, name: '이지훈', email: 'user3@example.com', department: '물리학과' },
+      { id: 4, name: '정민지', email: 'admin@example.com', department: '관리부서' },
+    ]
+    
+    const equipmentData = [
+      { id: 1, name: '냉동기 1', description: '일반용 냉동기', location: '1층 실험실', color: '#3B82F6' },
+      { id: 2, name: '냉동기 2', description: '식품용 냉동기', location: '2층 실험실', color: '#10B981' },
+      { id: 3, name: '냉동기 3', description: '시약용 냉동기', location: '2층 실험실', color: '#F59E0B' },
+      { id: 4, name: '냉동기 4', description: '시료 보관용', location: '3층 실험실', color: '#EF4444' },
+      { id: 5, name: '초저온냉동기', description: '-80℃ 보관용', location: '지하 1층', color: '#8B5CF6' },
+    ]
+    
+    const reservationsData = [
+      {
+        id: 1,
+        title: '시료 냉동 보관',
+        user: 1,
+        equipment: 1,
+        startTime: '2025-04-19T09:00:00',
+        endTime: '2025-04-19T11:00:00',
+        notes: '분자생물학 실험 시료'
+      },
+      {
+        id: 2,
+        title: '저온 실험',
+        user: 2,
+        equipment: 3,
+        startTime: '2025-04-19T13:00:00',
+        endTime: '2025-04-19T15:00:00',
+        notes: '효소 활성도 실험'
+      },
+      {
+        id: 3,
+        title: '초저온 보존',
+        user: 3,
+        equipment: 5,
+        startTime: '2025-04-20T10:00:00',
+        endTime: '2025-04-20T12:00:00',
+        notes: '세포 보존'
+      }
+    ]
+    
+    setUsers(usersData)
+    setEquipment(equipmentData)
+    setReservations(reservationsData)
+    setLoading(false)
   }, [])
 
-  // 필터 변경 시 데이터 재로딩
+  // 필터링된 예약 가져오기
   useEffect(() => {
-    fetchFilteredReservations()
+    // 필터링 로직 구현
+    const filtered = getFilteredReservations();
+    setReservations(filtered);
   }, [selectedUser, selectedEquipment])
 
-  // 모바일 기기에서 적절한 기본 뷰 설정
-  useEffect(() => {
-    if (isMobile && view === 'dayGridMonth') {
-      // 모바일에서는 일간 뷰를 기본으로 설정
-      handleViewChange('timeGridDay')
-    }
-  }, [isMobile])
-
-  // 모든 데이터 로딩
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      // 사용자 목록 가져오기
-      const usersRes = await apiService.users.getAll()
-      setUsers(usersRes.data)
-      
-      // 장비 목록 가져오기
-      const equipmentRes = await apiService.equipment.getAll()
-      setEquipment(equipmentRes.data)
-      
-      // 예약 데이터 가져오기
-      await fetchFilteredReservations()
-    } catch (error) {
-      console.error('데이터 로딩 에러:', error)
-      toast.error('데이터를 불러오는데 실패했습니다.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // 필터링된 예약 가져오기
-  const fetchFilteredReservations = async () => {
-    try {
-      setLoading(true)
-      const filters = {}
+  // 필터링 함수
+  const getFilteredReservations = () => {
+    // 더미 데이터 (실제로는 API 호출로 대체될 것)
+    const allReservations = [
+      {
+        id: 1,
+        title: '시료 냉동 보관',
+        user: 1,
+        equipment: 1,
+        startTime: '2025-04-19T09:00:00',
+        endTime: '2025-04-19T11:00:00',
+        notes: '분자생물학 실험 시료'
+      },
+      {
+        id: 2,
+        title: '저온 실험',
+        user: 2,
+        equipment: 3,
+        startTime: '2025-04-19T13:00:00',
+        endTime: '2025-04-19T15:00:00',
+        notes: '효소 활성도 실험'
+      },
+      {
+        id: 3,
+        title: '초저온 보존',
+        user: 3,
+        equipment: 5,
+        startTime: '2025-04-20T10:00:00',
+        endTime: '2025-04-20T12:00:00',
+        notes: '세포 보존'
+      }
+    ];
+    
+    return allReservations.filter(reservation => {
+      let matchesUser = true;
+      let matchesEquipment = true;
       
       if (selectedUser) {
-        filters.userId = selectedUser
+        matchesUser = reservation.user === parseInt(selectedUser);
       }
       
       if (selectedEquipment) {
-        filters.equipmentId = selectedEquipment
+        matchesEquipment = reservation.equipment === parseInt(selectedEquipment);
       }
       
-      // API 호출로 필터링된 예약 가져오기
-      let response
-      
-      if (Object.keys(filters).length > 0) {
-        response = await apiService.reservations.getFiltered(filters)
-      } else {
-        response = await apiService.reservations.getAll()
-      }
-      
-      setReservations(response.data)
-    } catch (error) {
-      console.error('필터링된 예약 로딩 에러:', error)
-      toast.error('예약 데이터를 불러오는데 실패했습니다.')
-    } finally {
-      setLoading(false)
-    }
+      return matchesUser && matchesEquipment;
+    });
   }
 
   // 예약 생성 함수
   const createReservation = async (formData) => {
     try {
-      const response = await apiService.reservations.create(formData)
-      await fetchFilteredReservations() // 목록 새로고침
-      toast.success('예약이 생성되었습니다.')
-      return true
+      // API 없이 로컬 상태 업데이트
+      const newReservation = {
+        id: reservations.length > 0 ? Math.max(...reservations.map(r => r.id)) + 1 : 1,
+        user: parseInt(formData.user),
+        equipment: parseInt(formData.equipment),
+        title: formData.title,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        notes: formData.notes
+      };
+      
+      setReservations([...reservations, newReservation]);
+      toast.success('예약이 생성되었습니다.');
+      return true;
     } catch (error) {
-      console.error('예약 생성 에러:', error)
-      toast.error(error.response?.data?.message || '예약 생성에 실패했습니다.')
-      return false
+      console.error('예약 생성 에러:', error);
+      toast.error('예약 생성에 실패했습니다.');
+      return false;
     }
   }
 
   // 예약 수정 함수
   const updateReservation = async (id, formData) => {
     try {
-      const response = await apiService.reservations.update(id, formData)
-      await fetchFilteredReservations() // 목록 새로고침
-      toast.success('예약이 수정되었습니다.')
-      return true
+      // API 없이 로컬 상태 업데이트
+      const updatedReservations = reservations.map(reservation => 
+        reservation.id === id 
+          ? {
+              ...reservation,
+              title: formData.title,
+              user: parseInt(formData.user),
+              equipment: parseInt(formData.equipment),
+              startTime: formData.startTime,
+              endTime: formData.endTime,
+              notes: formData.notes
+            }
+          : reservation
+      );
+      
+      setReservations(updatedReservations);
+      toast.success('예약이 수정되었습니다.');
+      return true;
     } catch (error) {
-      console.error('예약 수정 에러:', error)
-      toast.error(error.response?.data?.message || '예약 수정에 실패했습니다.')
-      return false
+      console.error('예약 수정 에러:', error);
+      toast.error('예약 수정에 실패했습니다.');
+      return false;
     }
   }
 
   // 예약 삭제 함수
   const deleteReservation = async (id) => {
     try {
-      await apiService.reservations.delete(id)
-      await fetchFilteredReservations() // 목록 새로고침
-      toast.success('예약이 삭제되었습니다.')
-      return true
+      // API 없이 로컬 상태 업데이트
+      const filteredReservations = reservations.filter(reservation => reservation.id !== id);
+      setReservations(filteredReservations);
+      toast.success('예약이 삭제되었습니다.');
+      return true;
     } catch (error) {
-      console.error('예약 삭제 에러:', error)
-      toast.error(error.response?.data?.message || '예약 삭제에 실패했습니다.')
-      return false
+      console.error('예약 삭제 에러:', error);
+      toast.error('예약 삭제에 실패했습니다.');
+      return false;
     }
   }
 
@@ -162,28 +222,28 @@ export default function CalendarView() {
       start: selectInfo.startStr,
       end: selectInfo.endStr,
       allDay: selectInfo.allDay
-    })
-    setSelectedReservation(null)
-    setModalOpen(true)
+    });
+    setSelectedReservation(null);
+    setModalOpen(true);
   }
 
   // 예약 클릭 핸들러
   const handleEventClick = (clickInfo) => {
-    const reservation = reservations.find(res => res._id === clickInfo.event.id)
-    setSelectedReservation(reservation)
-    setSelectedDate(null)
-    setModalOpen(true)
+    const reservation = reservations.find(res => res.id.toString() === clickInfo.event.id);
+    setSelectedReservation(reservation);
+    setSelectedDate(null);
+    setModalOpen(true);
   }
   
   // 캘린더에 표시할 이벤트 데이터
   const events = reservations.map(reservation => {
-    const equipmentItem = equipment.find(e => e._id === reservation.equipment) || {}
-    const userItem = users.find(u => u._id === reservation.user) || { name: '사용자' }
+    const equipmentItem = equipment.find(e => e.id === reservation.equipment) || {};
+    const userItem = users.find(u => u.id === reservation.user) || { name: '사용자' };
     
     return {
-      id: reservation._id,
-      title: reservation.title || `${equipmentItem.name || '장비'} (${userItem.name})`,
-      start: reservation.startTime || reservation.date,
+      id: reservation.id.toString(),
+      title: `${reservation.title} - ${equipmentItem.name || '장비'} (${userItem.name})`,
+      start: reservation.startTime,
       end: reservation.endTime,
       backgroundColor: equipmentItem.color || '#3788d8',
       borderColor: equipmentItem.color || '#3788d8',
@@ -192,77 +252,72 @@ export default function CalendarView() {
         equipment: reservation.equipment,
         user: reservation.user
       }
-    }
-  })
+    };
+  });
 
   // 뷰 변경 핸들러
   const handleViewChange = (viewType) => {
-    setView(viewType)
+    setView(viewType);
     if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi()
-      calendarApi.changeView(viewType)
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.changeView(viewType);
     }
   }
 
   // 폼 제출 핸들러
   const handleFormSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     
     const formData = {
-      equipment: e.target.equipment.value,
       title: e.target.title.value,
-      date: format(parseISO(e.target.startTime.value), 'yyyy-MM-dd'),
+      user: e.target.user.value,
+      equipment: e.target.equipment.value,
       startTime: e.target.startTime.value,
       endTime: e.target.endTime.value,
       notes: e.target.description.value
-    }
+    };
     
-    let success = false
+    let success = false;
     
     if (selectedReservation) {
       // 예약 수정
-      success = await updateReservation(selectedReservation._id, formData)
+      success = await updateReservation(selectedReservation.id, formData);
     } else {
       // 새 예약 생성
-      success = await createReservation(formData)
+      success = await createReservation(formData);
     }
     
     if (success) {
-      setModalOpen(false)
+      setModalOpen(false);
     }
   }
 
   // 예약 삭제 핸들러
   const handleDelete = async () => {
-    if (!selectedReservation) return
+    if (!selectedReservation) return;
     
-    const confirmed = window.confirm('정말로 이 예약을 삭제하시겠습니까?')
-    if (!confirmed) return
+    const confirmed = window.confirm('정말로 이 예약을 삭제하시겠습니까?');
+    if (!confirmed) return;
     
-    const success = await deleteReservation(selectedReservation._id)
+    const success = await deleteReservation(selectedReservation.id);
     if (success) {
-      setModalOpen(false)
+      setModalOpen(false);
     }
   }
 
   // 필터 변경 핸들러
   const handleUserFilterChange = (e) => {
-    setSelectedUser(e.target.value)
+    setSelectedUser(e.target.value);
   }
   
   const handleEquipmentFilterChange = (e) => {
-    setSelectedEquipment(e.target.value)
+    setSelectedEquipment(e.target.value);
   }
   
   // 필터 초기화 핸들러
   const handleClearFilters = () => {
-    setSelectedUser('')
-    setSelectedEquipment('')
-  }
-
-  // 본인의 예약만 보기 핸들러
-  const handleViewMyReservations = () => {
-    setSelectedUser(user._id)
+    setSelectedUser('');
+    setSelectedEquipment('');
   }
 
   return (
@@ -307,16 +362,6 @@ export default function CalendarView() {
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
           <h2 className="text-lg font-medium">필터</h2>
-          
-          {/* 내 예약 보기 버튼 */}
-          <div className="mt-2 sm:mt-0">
-            <button
-              onClick={handleViewMyReservations}
-              className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-md"
-            >
-              내 예약만 보기
-            </button>
-          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -332,7 +377,7 @@ export default function CalendarView() {
             >
               <option value="">모든 사용자</option>
               {users.map(userItem => (
-                <option key={userItem._id} value={userItem._id}>{userItem.name}</option>
+                <option key={userItem.id} value={userItem.id}>{userItem.name}</option>
               ))}
             </select>
           </div>
@@ -349,7 +394,7 @@ export default function CalendarView() {
             >
               <option value="">모든 장비</option>
               {equipment.map(item => (
-                <option key={item._id} value={item._id}>{item.name}</option>
+                <option key={item.id} value={item.id}>{item.name}</option>
               ))}
             </select>
           </div>
@@ -441,7 +486,7 @@ export default function CalendarView() {
                   </div>
                   
                   <form onSubmit={handleFormSubmit} className="mt-5 space-y-4">
-                    {/* 제목 필드 추가 */}
+                    {/* 제목 필드 */}
                     <div>
                       <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                         제목
@@ -455,6 +500,25 @@ export default function CalendarView() {
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         placeholder="예약 제목"
                       />
+                    </div>
+                    
+                    {/* 사용자 선택 필드 추가 */}
+                    <div>
+                      <label htmlFor="user" className="block text-sm font-medium text-gray-700">
+                        사용자
+                      </label>
+                      <select
+                        name="user"
+                        id="user"
+                        required
+                        defaultValue={selectedReservation?.user || ''}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      >
+                        <option value="" disabled>선택하세요</option>
+                        {users.map(item => (
+                          <option key={item.id} value={item.id}>{item.name}</option>
+                        ))}
+                      </select>
                     </div>
                   
                     <div>
@@ -470,7 +534,7 @@ export default function CalendarView() {
                       >
                         <option value="" disabled>선택하세요</option>
                         {equipment.map(item => (
-                          <option key={item._id} value={item._id}>{item.name}</option>
+                          <option key={item.id} value={item.id}>{item.name}</option>
                         ))}
                       </select>
                     </div>
