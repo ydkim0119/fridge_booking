@@ -1,5 +1,4 @@
 import { useState, useEffect, Fragment } from 'react'
-import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import { Dialog, Transition } from '@headlessui/react'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
@@ -16,8 +15,6 @@ export default function AdminPanel() {
     name: '',
     email: '',
     department: '',
-    role: 'user',
-    password: '',
   })
   
   // 장비 관련 상태
@@ -34,22 +31,22 @@ export default function AdminPanel() {
   // 로딩 상태
   const [loading, setLoading] = useState(true)
 
-  // 테스트용 더미 데이터
+  // 더미 데이터 로드
   useEffect(() => {
-    // 실제 API가 구현되기 전에 더미 데이터로 시각화
+    // 더미 데이터로 초기화
     const usersData = [
-      { id: 1, name: '김철수', email: 'user1@example.com', department: '화학과', role: 'user' },
-      { id: 2, name: '박영희', email: 'user2@example.com', department: '생물학과', role: 'user' },
-      { id: 3, name: '이지훈', email: 'user3@example.com', department: '물리학과', role: 'user' },
-      { id: 4, name: '정민지', email: 'admin@example.com', department: '관리부서', role: 'admin' },
+      { id: 1, name: '김철수', email: 'user1@example.com', department: '화학과' },
+      { id: 2, name: '박영희', email: 'user2@example.com', department: '생물학과' },
+      { id: 3, name: '이지훈', email: 'user3@example.com', department: '물리학과' },
+      { id: 4, name: '정민지', email: 'admin@example.com', department: '관리부서' },
     ]
     
     const equipmentData = [
-      { id: 1, name: '냉장고 1', description: '일반용 냉장고', location: '1층 실험실', color: '#3B82F6' },
-      { id: 2, name: '냉장고 2', description: '식품용 냉장고', location: '2층 실험실', color: '#10B981' },
-      { id: 3, name: '냉장고 3', description: '시약용 냉장고', location: '2층 실험실', color: '#F59E0B' },
-      { id: 4, name: '냉장고 4', description: '시료 보관용', location: '3층 실험실', color: '#EF4444' },
-      { id: 5, name: '초저온냉장고', description: '-80℃ 보관용', location: '지하 1층', color: '#8B5CF6' },
+      { id: 1, name: '냉동기 1', description: '일반용 냉동기', location: '1층 실험실', color: '#3B82F6' },
+      { id: 2, name: '냉동기 2', description: '식품용 냉동기', location: '2층 실험실', color: '#10B981' },
+      { id: 3, name: '냉동기 3', description: '시약용 냉동기', location: '2층 실험실', color: '#F59E0B' },
+      { id: 4, name: '냉동기 4', description: '시료 보관용', location: '3층 실험실', color: '#EF4444' },
+      { id: 5, name: '초저온냉동기', description: '-80℃ 보관용', location: '지하 1층', color: '#8B5CF6' },
     ]
     
     setUsers(usersData)
@@ -70,8 +67,6 @@ export default function AdminPanel() {
         name: user.name,
         email: user.email,
         department: user.department,
-        role: user.role,
-        password: '',
       })
     } else {
       setSelectedUser(null)
@@ -79,8 +74,6 @@ export default function AdminPanel() {
         name: '',
         email: '',
         department: '',
-        role: 'user',
-        password: '',
       })
     }
     setUserModalOpen(true)
@@ -88,7 +81,26 @@ export default function AdminPanel() {
 
   const handleUserSubmit = async (e) => {
     e.preventDefault()
-    toast.success(selectedUser ? '사용자 정보가 수정되었습니다.' : '새 사용자가 생성되었습니다.')
+    
+    if (selectedUser) {
+      // 사용자 수정
+      const updatedUsers = users.map(user => 
+        user.id === selectedUser.id 
+          ? { ...user, ...userFormData } 
+          : user
+      )
+      setUsers(updatedUsers)
+      toast.success('사용자 정보가 수정되었습니다.')
+    } else {
+      // 새 사용자 추가
+      const newUser = {
+        id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
+        ...userFormData
+      }
+      setUsers([...users, newUser])
+      toast.success('새 사용자가 생성되었습니다.')
+    }
+    
     setUserModalOpen(false)
   }
 
@@ -129,7 +141,26 @@ export default function AdminPanel() {
 
   const handleEquipmentSubmit = async (e) => {
     e.preventDefault()
-    toast.success(selectedEquipment ? '장비 정보가 수정되었습니다.' : '새 장비가 생성되었습니다.')
+    
+    if (selectedEquipment) {
+      // 장비 수정
+      const updatedEquipment = equipment.map(eq => 
+        eq.id === selectedEquipment.id 
+          ? { ...eq, ...equipmentFormData } 
+          : eq
+      )
+      setEquipment(updatedEquipment)
+      toast.success('장비 정보가 수정되었습니다.')
+    } else {
+      // 새 장비 추가
+      const newEquipment = {
+        id: equipment.length > 0 ? Math.max(...equipment.map(e => e.id)) + 1 : 1,
+        ...equipmentFormData
+      }
+      setEquipment([...equipment, newEquipment])
+      toast.success('새 장비가 생성되었습니다.')
+    }
+    
     setEquipmentModalOpen(false)
   }
 
@@ -151,7 +182,7 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">관리자 패널</h1>
+      <h1 className="text-2xl font-semibold">장비 및 사용자 관리</h1>
       
       {/* 탭 메뉴 */}
       <div className="border-b border-gray-200">
@@ -202,7 +233,6 @@ export default function AdminPanel() {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서/학과</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">권한</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
@@ -212,13 +242,6 @@ export default function AdminPanel() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
-                      }`}>
-                        {user.role === 'admin' ? '관리자' : '사용자'}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => openUserModal(user)}
@@ -329,43 +352,53 @@ export default function AdminPanel() {
                   <form onSubmit={handleUserSubmit} className="mt-5 space-y-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700">이름</label>
-                      <input type="text" name="name" id="name" required value={userFormData.name} onChange={handleUserFormChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                      <input 
+                        type="text" 
+                        name="name" 
+                        id="name" 
+                        required 
+                        value={userFormData.name} 
+                        onChange={handleUserFormChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" 
+                      />
                     </div>
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700">이메일</label>
-                      <input type="email" name="email" id="email" required disabled={selectedUser} value={userFormData.email} 
-                        onChange={handleUserFormChange} className={`mt-1 block w-full rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-                          selectedUser ? 'border-gray-300 bg-gray-100' : 'border-gray-300'}`} />
-                      {selectedUser && (<p className="mt-1 text-xs text-gray-500">이메일은 변경할 수 없습니다.</p>)}
+                      <input 
+                        type="email" 
+                        name="email" 
+                        id="email" 
+                        required
+                        value={userFormData.email} 
+                        onChange={handleUserFormChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      />
                     </div>
                     <div>
                       <label htmlFor="department" className="block text-sm font-medium text-gray-700">부서/학과</label>
-                      <input type="text" name="department" id="department" required value={userFormData.department} 
-                        onChange={handleUserFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                      <input 
+                        type="text" 
+                        name="department" 
+                        id="department" 
+                        required 
+                        value={userFormData.department} 
+                        onChange={handleUserFormChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" 
+                      />
                     </div>
-                    <div>
-                      <label htmlFor="role" className="block text-sm font-medium text-gray-700">권한</label>
-                      <select id="role" name="role" value={userFormData.role} onChange={handleUserFormChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                        <option value="user">사용자</option>
-                        <option value="admin">관리자</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                        {selectedUser ? '새 비밀번호 (변경 시에만 입력)' : '비밀번호'}
-                      </label>
-                      <input type="password" name="password" id="password" required={!selectedUser} 
-                        value={userFormData.password} onChange={handleUserFormChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
-                    </div>
+                    
                     <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                      <button type="submit" className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:col-start-2">
+                      <button 
+                        type="submit" 
+                        className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:col-start-2"
+                      >
                         {selectedUser ? '저장' : '생성'}
                       </button>
-                      <button type="button" onClick={() => setUserModalOpen(false)}
-                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">
+                      <button 
+                        type="button" 
+                        onClick={() => setUserModalOpen(false)}
+                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+                      >
                         취소
                       </button>
                     </div>
@@ -399,34 +432,70 @@ export default function AdminPanel() {
                   <form onSubmit={handleEquipmentSubmit} className="mt-5 space-y-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700">장비명</label>
-                      <input type="text" name="name" id="name" required value={equipmentFormData.name} 
-                        onChange={handleEquipmentFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                      <input 
+                        type="text" 
+                        name="name" 
+                        id="name" 
+                        required 
+                        value={equipmentFormData.name} 
+                        onChange={handleEquipmentFormChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" 
+                      />
                     </div>
                     <div>
                       <label htmlFor="description" className="block text-sm font-medium text-gray-700">설명</label>
-                      <input type="text" name="description" id="description" value={equipmentFormData.description} 
-                        onChange={handleEquipmentFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                      <input 
+                        type="text" 
+                        name="description" 
+                        id="description" 
+                        value={equipmentFormData.description} 
+                        onChange={handleEquipmentFormChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" 
+                      />
                     </div>
                     <div>
                       <label htmlFor="location" className="block text-sm font-medium text-gray-700">위치</label>
-                      <input type="text" name="location" id="location" value={equipmentFormData.location} 
-                        onChange={handleEquipmentFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                      <input 
+                        type="text" 
+                        name="location" 
+                        id="location" 
+                        value={equipmentFormData.location} 
+                        onChange={handleEquipmentFormChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" 
+                      />
                     </div>
                     <div>
                       <label htmlFor="color" className="block text-sm font-medium text-gray-700">색상</label>
                       <div className="flex items-center mt-1">
-                        <input type="color" name="color" id="color" value={equipmentFormData.color} 
-                          onChange={handleEquipmentFormChange} className="h-8 w-8 rounded-md border-gray-300 shadow-sm" />
-                        <input type="text" name="color" value={equipmentFormData.color} 
-                          onChange={handleEquipmentFormChange} className="ml-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                        <input 
+                          type="color" 
+                          name="color" 
+                          id="color" 
+                          value={equipmentFormData.color} 
+                          onChange={handleEquipmentFormChange}
+                          className="h-8 w-8 rounded-md border-gray-300 shadow-sm" 
+                        />
+                        <input 
+                          type="text" 
+                          name="color" 
+                          value={equipmentFormData.color} 
+                          onChange={handleEquipmentFormChange}
+                          className="ml-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" 
+                        />
                       </div>
                     </div>
                     <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                      <button type="submit" className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:col-start-2">
+                      <button 
+                        type="submit" 
+                        className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:col-start-2"
+                      >
                         {selectedEquipment ? '저장' : '생성'}
                       </button>
-                      <button type="button" onClick={() => setEquipmentModalOpen(false)}
-                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">
+                      <button 
+                        type="button" 
+                        onClick={() => setEquipmentModalOpen(false)}
+                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+                      >
                         취소
                       </button>
                     </div>
