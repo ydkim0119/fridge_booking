@@ -1,8 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import Layout from './components/Layout'
-import Login from './pages/Login'
-import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import CalendarView from './pages/CalendarView'
 import StatsDashboard from './pages/StatsDashboard'
@@ -18,7 +16,7 @@ function ProtectedRoute({ children }) {
   }
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" />
+    return <Navigate to="/dashboard" />
   }
   
   return children
@@ -31,18 +29,16 @@ function AdminRoute({ children }) {
     return <div className="flex justify-center items-center h-screen">로딩 중...</div>
   }
   
-  if (!user || user.role !== 'admin') {
-    return <Navigate to="/dashboard" />
-  }
-  
+  // 관리자 여부 확인 제거 (누구나 관리자 기능 사용 가능)
   return children
 }
 
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      {/* 로그인, 회원가입 경로 제거하고 바로 대시보드로 리다이렉트 */}
+      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/register" element={<Navigate to="/dashboard" replace />} />
       
       <Route path="/" element={
         <ProtectedRoute>
@@ -54,11 +50,8 @@ function App() {
         <Route path="calendar" element={<CalendarView />} />
         <Route path="stats" element={<StatsDashboard />} />
         <Route path="profile" element={<Profile />} />
-        <Route path="admin" element={
-          <AdminRoute>
-            <AdminPanel />
-          </AdminRoute>
-        } />
+        {/* 모든 사용자가 관리 기능 접근 가능 */}
+        <Route path="admin" element={<AdminPanel />} />
       </Route>
       
       <Route path="*" element={<NotFound />} />
