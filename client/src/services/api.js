@@ -79,6 +79,8 @@ const apiService = {
     delete: (id) => api.delete(`/reservations/${id}`),
     // 필터링 기능 추가
     getFiltered: (filters) => api.get('/reservations/filter', { params: filters }),
+    // 날짜 범위로 예약 조회
+    getByDateRange: (startDate, endDate) => api.get(`/reservations/range/${startDate}/${endDate}`),
   },
   
   // 통계 관련 API
