@@ -57,10 +57,20 @@ The backend of the project is implemented using Node.js and Express and includes
 - **Docker Configuration**: Dockerfile and docker-compose.yml for containerized deployment.
 - **Render Configuration**: render.yaml for deploying the application on Render's free plan.
 
+### Recent Deployment Fixes
+
+- **MongoDB Connection**: Fixed MongoDB authentication issues by updating the connection logic and implementing a more robust connection handling.
+- **Static File Paths**: Corrected the static file path issues by ensuring the server correctly serves files from the build output directory.
+- **Port Binding**: Updated the server to listen on all interfaces (0.0.0.0) to enable Render to access the server.
+- **Environment Variables**: Added example environment variables file for Render deployment.
+- **Fallback to Dummy Data**: Implemented a feature to allow the server to continue running with dummy data if MongoDB connection fails.
+
 ## Next Steps
 
 ### Pending Tasks
 
+- **MongoDB Setup**: Set up a MongoDB database in the cloud (e.g. MongoDB Atlas) for production deployment.
+- **Environment Configuration**: Configure environment variables in the Render dashboard.
 - **Fine-tune API Integration**: Ensure all API endpoints are properly connected and functioning.
 - **Testing**: Add comprehensive testing for both frontend and backend components.
 - **Documentation**: Add API documentation and user guides.
@@ -120,3 +130,4 @@ The backend of the project is implemented using Node.js and Express and includes
 - Frontend and backend integration needs more thorough testing
 - No offline capability (requires internet connection)
 - Limited data export capabilities
+- Requires MongoDB connection or fallback to dummy data mode
