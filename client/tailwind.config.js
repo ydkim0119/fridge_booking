@@ -8,6 +8,7 @@ export default {
     extend: {},
   },
   plugins: [
-    require('@tailwindcss/forms'),
+    // 폼 스타일링이 필요한 경우 @tailwindcss/forms 패키지를 설치 후 아래 줄의 주석을 제거하세요
+    // require('@tailwindcss/forms'),
   ],
 }
