@@ -29,12 +29,18 @@ export default function CalendarView() {
   // 모바일 화면 감지
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      
+      // 모바일에서 자동으로 일간 뷰로 전환
+      if (mobile && view === 'dayGridMonth') {
+        handleViewChange('timeGridDay')
+      }
     }
     
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  }, [view])
 
   // 초기 데이터 로딩
   useEffect(() => {
@@ -49,7 +55,7 @@ export default function CalendarView() {
   // 모바일 기기에서 적절한 기본 뷰 설정
   useEffect(() => {
     if (isMobile && view === 'dayGridMonth') {
-      // 모바일에서는 주간 뷰를 기본으로 설정
+      // 모바일에서는 일간 뷰를 기본으로 설정
       handleViewChange('timeGridDay')
     }
   }, [isMobile])
@@ -79,6 +85,7 @@ export default function CalendarView() {
   // 필터링된 예약 가져오기
   const fetchFilteredReservations = async () => {
     try {
+      setLoading(true)
       const filters = {}
       
       if (selectedUser) {
@@ -102,6 +109,8 @@ export default function CalendarView() {
     } catch (error) {
       console.error('필터링된 예약 로딩 에러:', error)
       toast.error('예약 데이터를 불러오는데 실패했습니다.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -173,7 +182,7 @@ export default function CalendarView() {
     
     return {
       id: reservation._id,
-      title: `${equipmentItem.name || '장비'} (${userItem.name})`,
+      title: reservation.title || `${equipmentItem.name || '장비'} (${userItem.name})`,
       start: reservation.startTime || reservation.date,
       end: reservation.endTime,
       backgroundColor: equipmentItem.color || '#3788d8',
@@ -201,6 +210,7 @@ export default function CalendarView() {
     
     const formData = {
       equipment: e.target.equipment.value,
+      title: e.target.title.value,
       date: format(parseISO(e.target.startTime.value), 'yyyy-MM-dd'),
       startTime: e.target.startTime.value,
       endTime: e.target.endTime.value,
@@ -250,6 +260,11 @@ export default function CalendarView() {
     setSelectedEquipment('')
   }
 
+  // 본인의 예약만 보기 핸들러
+  const handleViewMyReservations = () => {
+    setSelectedUser(user._id)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -257,7 +272,7 @@ export default function CalendarView() {
         
         <div className="flex flex-col sm:flex-row gap-4">
           {/* 뷰 선택 */}
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 overflow-x-auto">
             {!isMobile && (
               <button
                 onClick={() => handleViewChange('dayGridMonth')}
@@ -290,7 +305,20 @@ export default function CalendarView() {
       
       {/* 필터 컨트롤 */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-medium mb-4">필터</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
+          <h2 className="text-lg font-medium">필터</h2>
+          
+          {/* 내 예약 보기 버튼 */}
+          <div className="mt-2 sm:mt-0">
+            <button
+              onClick={handleViewMyReservations}
+              className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-md"
+            >
+              내 예약만 보기
+            </button>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label htmlFor="userFilter" className="block text-sm font-medium text-gray-700 mb-1">
@@ -329,7 +357,7 @@ export default function CalendarView() {
           <div className="flex items-end">
             <button
               onClick={handleClearFilters}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md"
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md w-full sm:w-auto"
             >
               필터 초기화
             </button>
@@ -413,6 +441,22 @@ export default function CalendarView() {
                   </div>
                   
                   <form onSubmit={handleFormSubmit} className="mt-5 space-y-4">
+                    {/* 제목 필드 추가 */}
+                    <div>
+                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                        제목
+                      </label>
+                      <input
+                        type="text"
+                        name="title"
+                        id="title"
+                        required
+                        defaultValue={selectedReservation?.title || ''}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="예약 제목"
+                      />
+                    </div>
+                  
                     <div>
                       <label htmlFor="equipment" className="block text-sm font-medium text-gray-700">
                         장비
