@@ -3,7 +3,7 @@ const router = express.Router();
 
 // Import route modules
 const authRoutes = require('./auth.routes');
-const userRoutes = require('./user.routes');
+const userRoutes = require('./userRoutes');
 const equipmentRoutes = require('./equipment.routes');
 const reservationRoutes = require('./reservation.routes');
 const statsRoutes = require('./stats.routes');
