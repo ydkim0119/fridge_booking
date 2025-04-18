@@ -1,12 +1,11 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
-const auth = require('../middleware/auth');
-const admin = require('../middleware/admin');
+const { protect, admin } = require('../middleware/auth');
 const router = express.Router();
 
 // 모든 사용자 조회 (관리자 전용)
-router.get('/', [auth, admin], async (req, res) => {
+router.get('/', [protect, admin], async (req, res) => {
   try {
     const users = await User.find().select('-password').sort({ name: 1 });
     res.json(users);
@@ -17,7 +16,7 @@ router.get('/', [auth, admin], async (req, res) => {
 });
 
 // 현재 로그인한 사용자 정보 조회
-router.get('/me', auth, async (req, res) => {
+router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) {
@@ -31,7 +30,7 @@ router.get('/me', auth, async (req, res) => {
 });
 
 // 특정 사용자 조회
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', protect, async (req, res) => {
   try {
     // 관리자가 아닌 경우, 자신의 정보만 조회 가능
     if (req.params.id !== req.user.id && req.user.role !== 'admin') {
@@ -54,7 +53,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // 사용자 정보 수정
-router.put('/:id', [auth, [
+router.put('/:id', [protect, [
   body('name').notEmpty().withMessage('이름을 입력하세요'),
   body('department').notEmpty().withMessage('소속 부서를 입력하세요'),
   body('email').isEmail().withMessage('유효한 이메일을 입력하세요')
@@ -116,7 +115,7 @@ router.put('/:id', [auth, [
 });
 
 // 사용자 삭제 (관리자 전용)
-router.delete('/:id', [auth, admin], async (req, res) => {
+router.delete('/:id', [protect, admin], async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
