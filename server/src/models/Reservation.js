@@ -6,16 +6,12 @@ const reservationSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  description: {
-    type: String,
-    trim: true
-  },
-  userId: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  equipmentId: {
+  equipment: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Equipment',
     required: true
@@ -28,6 +24,10 @@ const reservationSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  notes: {
+    type: String,
+    trim: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -37,7 +37,7 @@ const reservationSchema = new mongoose.Schema({
 // 예약 시간 중복 검증
 reservationSchema.statics.checkOverlap = async function(equipmentId, startTime, endTime, excludeId = null) {
   const query = {
-    equipmentId,
+    equipment: equipmentId,
     $or: [
       // 케이스 1: 새 예약이 기존 예약 내에 완전히 포함됨
       { startTime: { $lte: startTime }, endTime: { $gte: endTime } },
