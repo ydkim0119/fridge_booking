@@ -1,41 +1,25 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
-// Protect routes - verify token and authorization
-const protect = async (req, res, next) => {
-  let token;
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
 
-  // Check if token exists in header
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      // Get token from header
-      token = req.headers.authorization.split(' ')[1];
+module.exports = function(req, res, next) {
+  // 헤더에서 토큰 가져오기
+  const token = req.header('Authorization')?.replace('Bearer ', '');
 
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-      // Get user from the token and add to req (exclude password)
-      req.user = await User.findById(decoded.id).select('-password');
-
-      next();
-    } catch (error) {
-      console.error(error);
-      return res.status(401).json({ message: '인증 실패: 토큰이 유효하지 않습니다' });
-    }
-  }
-
+  // 토큰이 없는 경우
   if (!token) {
-    return res.status(401).json({ message: '인증 실패: 토큰이 없습니다' });
+    return res.status(401).json({ message: '인증 토큰이 없습니다. 로그인이 필요합니다.' });
   }
-};
 
-// Admin middleware
-const admin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  try {
+    // 토큰 검증
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // 요청 객체에 사용자 정보 추가
+    req.user = decoded;
     next();
-  } else {
-    return res.status(403).json({ message: '관리자 권한이 필요합니다' });
+  } catch (error) {
+    console.error('토큰 검증 에러:', error);
+    res.status(401).json({ message: '유효하지 않은 토큰입니다.' });
   }
 };
-
-module.exports = { protect, admin };
