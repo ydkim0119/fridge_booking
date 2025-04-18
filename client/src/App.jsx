@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './contexts/AuthContext'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import CalendarView from './pages/CalendarView'
@@ -8,44 +7,17 @@ import Profile from './pages/Profile'
 import AdminPanel from './pages/AdminPanel'
 import NotFound from './pages/NotFound'
 
-function ProtectedRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth()
-  
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">로딩 중...</div>
-  }
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/dashboard" />
-  }
-  
-  return children
-}
-
-function AdminRoute({ children }) {
-  const { user, isLoading } = useAuth()
-  
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">로딩 중...</div>
-  }
-  
-  // 관리자 여부 확인 제거 (누구나 관리자 기능 사용 가능)
-  return children
-}
-
 function App() {
   return (
     <Routes>
-      {/* 로그인, 회원가입 경로 제거하고 바로 대시보드로 리다이렉트 */}
-      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+      {/* 모든 로그인/인증 경로 제거 및 메인으로 리다이렉트 */}
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/register" element={<Navigate to="/" replace />} />
       
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Layout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+      {/* 메인 레이아웃 - 보호 없이 바로 접근 가능 */}
+      <Route path="/" element={<Layout />}>
+        {/* 기본 경로를 캘린더로 설정 */}
+        <Route index element={<CalendarView />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="calendar" element={<CalendarView />} />
         <Route path="stats" element={<StatsDashboard />} />
