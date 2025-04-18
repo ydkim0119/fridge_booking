@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: fridge-booking
+    env: node
+    buildCommand: cd client && npm install && npm run build && cd ../server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: JWT_SECRET
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+
+  - type: redis
+    name: fridge-booking-redis
+    ipAllowList: # only allow internal connections
+      - source: 0.0.0.0/0
+        description: everywhere
+
+databases:
+  - name: fridge-booking-db
+    plan: starter
+    ipAllowList: # only allow connections from services in this Render account
+      - source: 0.0.0.0/0
+        description: everywhere
