@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 // CORS 설정 개선
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.CLIENT_URL || 'https://your-app-domain.com' 
+    ? process.env.CLIENT_URL || '*' 
     : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -44,7 +44,7 @@ app.use('/api/reservations', require('./routes/reservation.routes'));
 app.use('/api/stats', require('./routes/stats.routes'));
 
 // 더미 데이터 모드 (MongoDB 연결 실패 시를 대비한 폴백)
-let useDummyData = false;
+let useDummyData = process.env.USE_DUMMY_DATA === 'true' || false;
 
 // MongoDB 연결 실패 시 더미 데이터 사용
 if (useDummyData) {
@@ -183,11 +183,12 @@ if (useDummyData) {
 // 정적 파일 제공 (프로덕션 환경)
 if (process.env.NODE_ENV === 'production') {
   // 클라이언트 빌드 결과물 제공
-  app.use(express.static(path.join(__dirname, '../../client/dist')));
+  // vite.config.js에 설정된 경로와 일치시킴
+  app.use(express.static(path.join(__dirname, '../../server/public')));
   
   // 클라이언트 라우팅을 위한 설정
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../client/dist', 'index.html'));
+    res.sendFile(path.join(__dirname, '../../server/public', 'index.html'));
   });
 }
 
@@ -200,9 +201,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 서버 시작
-app.listen(PORT, () => {
-  console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+// 서버 시작 - 호스트를 0.0.0.0으로 설정하여 모든 네트워크 인터페이스에서 접근 가능하게 함
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`서버가 http://0.0.0.0:${PORT} 에서 실행 중입니다.`);
 });
 
 module.exports = app;
