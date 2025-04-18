@@ -1,1 +1,179 @@
-import { createContext, useContext, useState, useEffect } from 'react';\nimport axios from 'axios';\nimport { jwtDecode } from 'jwt-decode';\nimport { toast } from 'react-hot-toast';\n\nconst AuthContext = createContext();\n\nexport function useAuth() {\n  return useContext(AuthContext);\n}\n\nexport function AuthProvider({ children }) {\n  const [user, setUser] = useState(null);\n  const [isAuthenticated, setIsAuthenticated] = useState(false);\n  const [isLoading, setIsLoading] = useState(true);\n\n  // 페이지 로드 시 토큰 확인\n  useEffect(() => {\n    const checkToken = async () => {\n      const token = localStorage.getItem('token');\n      \n      if (token) {\n        try {\n          // 토큰 디코딩\n          const decoded = jwtDecode(token);\n          \n          // 토큰 만료 확인\n          if (decoded.exp * 1000 < Date.now()) {\n            console.log('토큰이 만료되었습니다');\n            localStorage.removeItem('token');\n            setIsAuthenticated(false);\n            setUser(null);\n          } else {\n            // API 호출 기본 헤더 설정\n            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;\n            \n            try {\n              // 사용자 정보 가져오기\n              const response = await axios.get('/api/users/me');\n              setUser(response.data);\n              setIsAuthenticated(true);\n            } catch (error) {\n              console.error('사용자 정보 가져오기 실패:', error);\n              // 서버 연결 문제로 더미 데이터 사용\n              handleDummyAuth(token, decoded);\n            }\n          }\n        } catch (error) {\n          console.error('인증 에러:', error);\n          localStorage.removeItem('token');\n          delete axios.defaults.headers.common['Authorization'];\n        }\n      }\n      \n      setIsLoading(false);\n    };\n    \n    checkToken();\n  }, []);\n\n  // 더미 데이터를 사용하는 인증 처리 (서버 문제 시 폴백)\n  const handleDummyAuth = (token, decoded) => {\n    console.log('더미 인증 데이터 사용');\n    // 서버 API가 실패하면 토큰에서 추출한 사용자 정보 사용\n    const dummyUser = {\n      id: decoded.id,\n      name: decoded.name || '사용자',\n      role: decoded.role || 'user',\n      email: decoded.email || 'user@example.com',\n      department: decoded.department || '일반'  \n    };\n    \n    setUser(dummyUser);\n    setIsAuthenticated(true);\n  };\n\n  // 로그인 함수\n  const login = async (email, password) => {\n    try {\n      const response = await axios.post('/api/auth/login', { email, password });\n      const { token, user } = response.data;\n      \n      localStorage.setItem('token', token);\n      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;\n      \n      setUser(user);\n      setIsAuthenticated(true);\n      \n      return { success: true };\n    } catch (error) {\n      console.error('로그인 에러:', error);\n      \n      // 서버 연결 실패 시 더미 데이터로 폴백 (개발용)\n      if (process.env.NODE_ENV === 'development') {\n        try {\n          console.log('개발 모드: 더미 로그인 시도');\n          const dummyResponse = await axios.post('/api/dummy/login', { email, password });\n          const { token, user } = dummyResponse.data;\n          \n          localStorage.setItem('token', token);\n          setUser(user);\n          setIsAuthenticated(true);\n          \n          return { success: true };\n        } catch (dummyError) {\n          return { \n            success: false, \n            message: error.response?.data?.message || '로그인 중 오류가 발생했습니다.' \n          };\n        }\n      }\n      \n      return { \n        success: false, \n        message: error.response?.data?.message || '로그인 중 오류가 발생했습니다.' \n      };\n    }\n  };\n\n  // 로그아웃 함수\n  const logout = () => {\n    localStorage.removeItem('token');\n    delete axios.defaults.headers.common['Authorization'];\n    setUser(null);\n    setIsAuthenticated(false);\n    toast.success('로그아웃되었습니다.');\n  };\n\n  // 회원가입 함수\n  const register = async (userData) => {\n    try {\n      const response = await axios.post('/api/auth/register', userData);\n      toast.success('회원가입이 완료되었습니다!');\n      return { success: true, data: response.data };\n    } catch (error) {\n      console.error('회원가입 에러:', error);\n      toast.error(error.response?.data?.message || '회원가입 중 오류가 발생했습니다.');\n      return { \n        success: false, \n        message: error.response?.data?.message || '회원가입 중 오류가 발생했습니다.' \n      };\n    }\n  };\n\n  // 사용자 정보 업데이트 함수\n  const updateProfile = async (userId, userData) => {\n    try {\n      const response = await axios.put(`/api/users/${userId}`, userData);\n      // 현재 로그인한 사용자 정보 업데이트\n      if (user && user.id === userId) {\n        setUser(response.data);\n      }\n      toast.success('프로필이 업데이트되었습니다!');\n      return { success: true, data: response.data };\n    } catch (error) {\n      console.error('프로필 업데이트 에러:', error);\n      toast.error(error.response?.data?.message || '프로필 업데이트 중 오류가 발생했습니다.');\n      return { \n        success: false, \n        message: error.response?.data?.message || '프로필 업데이트 중 오류가 발생했습니다.' \n      };\n    }\n  };\n\n  const value = {\n    user,\n    isAuthenticated,\n    isLoading,\n    login,\n    logout,\n    register,\n    updateProfile\n  };\n\n  return (\n    <AuthContext.Provider value={value}>\n      {children}\n    </AuthContext.Provider>\n  );\n}\n
+import { createContext, useContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
+import { toast } from 'react-hot-toast';
+import apiService from '../services/api';
+
+const AuthContext = createContext();
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 페이지 로드 시 토큰 확인
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = localStorage.getItem('token');
+      
+      if (token) {
+        try {
+          // 토큰 디코딩
+          const decoded = jwtDecode(token);
+          
+          // 토큰 만료 확인
+          if (decoded.exp * 1000 < Date.now()) {
+            console.log('토큰이 만료되었습니다');
+            localStorage.removeItem('token');
+            setIsAuthenticated(false);
+            setUser(null);
+          } else {
+            try {
+              // 사용자 정보 가져오기
+              const response = await apiService.auth.getCurrentUser();
+              setUser(response.data);
+              setIsAuthenticated(true);
+            } catch (error) {
+              console.error('사용자 정보 가져오기 실패:', error);
+              // 서버 연결 문제로 더미 데이터 사용
+              handleDummyAuth(token, decoded);
+            }
+          }
+        } catch (error) {
+          console.error('인증 에러:', error);
+          localStorage.removeItem('token');
+        }
+      }
+      
+      setIsLoading(false);
+    };
+    
+    checkToken();
+  }, []);
+
+  // 더미 데이터를 사용하는 인증 처리 (서버 문제 시 폴백)
+  const handleDummyAuth = (token, decoded) => {
+    console.log('더미 인증 데이터 사용');
+    // 서버 API가 실패하면 토큰에서 추출한 사용자 정보 사용
+    const dummyUser = {
+      _id: decoded.id || decoded._id,
+      name: decoded.name || '사용자',
+      role: decoded.role || 'user',
+      email: decoded.email || 'user@example.com',
+      department: decoded.department || '일반'  
+    };
+    
+    setUser(dummyUser);
+    setIsAuthenticated(true);
+  };
+
+  // 로그인 함수
+  const login = async (email, password) => {
+    try {
+      const response = await apiService.auth.login({ email, password });
+      const { token, user } = response.data;
+      
+      localStorage.setItem('token', token);
+      
+      setUser(user);
+      setIsAuthenticated(true);
+      
+      toast.success('로그인되었습니다!');
+      return { success: true };
+    } catch (error) {
+      console.error('로그인 에러:', error);
+      
+      // 개발 모드에서 더미 데이터 사용 (DEV 환경에서만)
+      if (import.meta.env.DEV) {
+        const dummyUsers = [
+          { _id: '1', email: 'admin@example.com', password: 'admin123', name: '관리자', role: 'admin', department: '관리부' },
+          { _id: '2', email: 'user@example.com', password: 'user123', name: '일반 사용자', role: 'user', department: '연구부' }
+        ];
+        
+        const dummyUser = dummyUsers.find(u => u.email === email && u.password === password);
+        
+        if (dummyUser) {
+          console.log('개발 모드: 더미 로그인 성공');
+          
+          // 비밀번호 제거하고 토큰 발급
+          const { password, ...userWithoutPassword } = dummyUser;
+          const dummyToken = 'dummy_token_' + Math.random().toString(36).substring(2);
+          
+          localStorage.setItem('token', dummyToken);
+          setUser(userWithoutPassword);
+          setIsAuthenticated(true);
+          
+          toast.success('개발 모드: 더미 계정으로 로그인되었습니다!');
+          return { success: true };
+        }
+      }
+      
+      toast.error(error.response?.data?.message || '로그인 중 오류가 발생했습니다.');
+      return { 
+        success: false, 
+        message: error.response?.data?.message || '로그인 중 오류가 발생했습니다.' 
+      };
+    }
+  };
+
+  // 로그아웃 함수
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    setIsAuthenticated(false);
+    toast.success('로그아웃되었습니다.');
+  };
+
+  // 회원가입 함수
+  const register = async (userData) => {
+    try {
+      const response = await apiService.auth.register(userData);
+      toast.success('회원가입이 완료되었습니다!');
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('회원가입 에러:', error);
+      toast.error(error.response?.data?.message || '회원가입 중 오류가 발생했습니다.');
+      return { 
+        success: false, 
+        message: error.response?.data?.message || '회원가입 중 오류가 발생했습니다.' 
+      };
+    }
+  };
+
+  // 사용자 정보 업데이트 함수
+  const updateProfile = async (userData) => {
+    try {
+      const response = await apiService.users.updateProfile(userData);
+      // 현재 로그인한 사용자 정보 업데이트
+      setUser(response.data);
+      toast.success('프로필이 업데이트되었습니다!');
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('프로필 업데이트 에러:', error);
+      toast.error(error.response?.data?.message || '프로필 업데이트 중 오류가 발생했습니다.');
+      return { 
+        success: false, 
+        message: error.response?.data?.message || '프로필 업데이트 중 오류가 발생했습니다.' 
+      };
+    }
+  };
+
+  const value = {
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+    register,
+    updateProfile
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
