@@ -7,13 +7,12 @@ const dotenv = require('dotenv');
 // 환경 변수 로드
 dotenv.config();
 
-// 데이터베이스 연결
-const connectDB = require('./utils/database');
-connectDB();
-
 // 애플리케이션 생성
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// 더미 데이터 모드 (MongoDB 연결 실패 시를 대비한 폴백)
+let useDummyData = process.env.USE_DUMMY_DATA === 'true' || false;
 
 // CORS 설정 개선
 const corsOptions = {
@@ -33,8 +32,28 @@ app.use(morgan('dev'));
 
 // 상태 확인 라우트
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: '서버가 정상적으로 실행 중입니다.' });
+  res.status(200).json({ 
+    status: 'ok', 
+    message: '서버가 정상적으로 실행 중입니다.',
+    mode: useDummyData ? '더미 데이터 모드' : '실제 데이터 모드',
+    env: process.env.NODE_ENV || 'development'
+  });
 });
+
+// 데이터베이스 연결 비동기로 처리
+const connectDB = require('./utils/database');
+(async () => {
+  try {
+    const connected = await connectDB();
+    if (!connected) {
+      useDummyData = true;
+      console.log('🔄 MongoDB 연결 실패로 더미 데이터 모드로 전환합니다.');
+    }
+  } catch (err) {
+    useDummyData = true;
+    console.log('🔄 MongoDB 연결 오류로 더미 데이터 모드로 전환합니다.', err.message);
+  }
+})();
 
 // API 라우트 정의
 app.use('/api/auth', require('./routes/auth.routes'));
@@ -43,10 +62,7 @@ app.use('/api/equipment', require('./routes/equipment.routes'));
 app.use('/api/reservations', require('./routes/reservation.routes'));
 app.use('/api/stats', require('./routes/stats.routes'));
 
-// 더미 데이터 모드 (MongoDB 연결 실패 시를 대비한 폴백)
-let useDummyData = process.env.USE_DUMMY_DATA === 'true' || false;
-
-// MongoDB 연결 실패 시 더미 데이터 사용
+// 더미 데이터 모드용 라우트
 if (useDummyData) {
   console.log('⚠️ 더미 데이터 모드로 실행 중입니다');
   
@@ -182,13 +198,28 @@ if (useDummyData) {
 
 // 정적 파일 제공 (프로덕션 환경)
 if (process.env.NODE_ENV === 'production') {
+  // 정적 파일 경로 로깅 (디버깅 용도)
+  const staticPath = path.join(__dirname, '../../server/public');
+  console.log('정적 파일 경로:', staticPath);
+  
   // 클라이언트 빌드 결과물 제공
-  // vite.config.js에 설정된 경로와 일치시킴
-  app.use(express.static(path.join(__dirname, '../../server/public')));
+  app.use(express.static(staticPath));
   
   // 클라이언트 라우팅을 위한 설정
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../server/public', 'index.html'));
+    const indexPath = path.join(staticPath, 'index.html');
+    console.log('index.html 경로:', indexPath);
+    
+    // 파일 존재 여부 확인
+    try {
+      if (require('fs').existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('index.html 파일을 찾을 수 없습니다. 빌드가 올바르게 완료되었는지 확인하세요.');
+      }
+    } catch (err) {
+      res.status(500).send(`서버 오류: ${err.message}`);
+    }
   });
 }
 
@@ -204,6 +235,7 @@ app.use((err, req, res, next) => {
 // 서버 시작 - 호스트를 0.0.0.0으로 설정하여 모든 네트워크 인터페이스에서 접근 가능하게 함
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`서버가 http://0.0.0.0:${PORT} 에서 실행 중입니다.`);
+  console.log(`운영 모드: ${process.env.NODE_ENV || 'development'}, 더미 데이터 모드: ${useDummyData ? '활성화' : '비활성화'}`);
 });
 
 module.exports = app;
