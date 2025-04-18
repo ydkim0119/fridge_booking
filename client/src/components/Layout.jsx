@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Dialog, Disclosure, Menu, Transition } from '@headlessui/react'
+import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Dialog, Menu, Transition } from '@headlessui/react'
 import {
   Bars3Icon,
   CalendarDaysIcon,
@@ -9,9 +9,7 @@ import {
   UsersIcon,
   XMarkIcon,
   UserCircleIcon,
-  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'
-import { useAuth } from '../contexts/AuthContext'
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -20,29 +18,14 @@ function classNames(...classes) {
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { pathname } = useLocation()
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
   
   const navigation = [
     { name: '대시보드', href: '/dashboard', icon: HomeIcon, current: pathname === '/dashboard' },
     { name: '캘린더', href: '/calendar', icon: CalendarDaysIcon, current: pathname === '/calendar' },
     { name: '통계', href: '/stats', icon: ChartBarIcon, current: pathname === '/stats' },
+    // 모든 사용자에게 관리자 메뉴 표시
+    { name: '장비/사용자 관리', href: '/admin', icon: UsersIcon, current: pathname === '/admin' }
   ]
-  
-  // 관리자일 경우 관리 메뉴 추가
-  if (user?.role === 'admin') {
-    navigation.push({ 
-      name: '관리자', 
-      href: '/admin', 
-      icon: UsersIcon, 
-      current: pathname === '/admin' 
-    })
-  }
 
   return (
     <div className="h-full">
@@ -90,7 +73,7 @@ export default function Layout() {
                 
                 <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-2">
                   <div className="flex h-16 shrink-0 items-center">
-                    <h1 className="text-xl font-bold">냉장고 예약 시스템</h1>
+                    <h1 className="text-xl font-bold">SQuIRL 냉동기 예약</h1>
                   </div>
                   <nav className="flex flex-1 flex-col">
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -134,7 +117,7 @@ export default function Layout() {
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
           <div className="flex h-16 shrink-0 items-center">
-            <h1 className="text-xl font-bold">냉장고 예약 시스템</h1>
+            <h1 className="text-xl font-bold">SQuIRL 냉동기 예약</h1>
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -176,7 +159,7 @@ export default function Layout() {
                 >
                   <UserCircleIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
                   <span className="sr-only">Your profile</span>
-                  <span aria-hidden="true">{user?.name || '사용자'}</span>
+                  <span aria-hidden="true">사용자 프로필</span>
                 </Link>
               </li>
             </ul>
@@ -194,7 +177,7 @@ export default function Layout() {
           <span className="sr-only">Open sidebar</span>
           <Bars3Icon className="h-6 w-6" aria-hidden="true" />
         </button>
-        <div className="flex-1 text-sm font-semibold leading-6 text-gray-900">냉장고 예약 시스템</div>
+        <div className="flex-1 text-sm font-semibold leading-6 text-gray-900">SQuIRL 냉동기 예약</div>
         <Menu as="div" className="relative">
           <Menu.Button className="-m-1.5 flex items-center p-1.5">
             <span className="sr-only">Open user menu</span>
@@ -221,19 +204,6 @@ export default function Layout() {
                   >
                     프로필
                   </Link>
-                )}
-              </Menu.Item>
-              <Menu.Item>
-                {({ active }) => (
-                  <button
-                    onClick={handleLogout}
-                    className={classNames(
-                      active ? 'bg-gray-50' : '',
-                      'block w-full text-left px-3 py-1 text-sm leading-6 text-gray-900'
-                    )}
-                  >
-                    로그아웃
-                  </button>
                 )}
               </Menu.Item>
             </Menu.Items>
