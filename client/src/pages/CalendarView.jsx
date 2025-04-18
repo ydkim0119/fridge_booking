@@ -22,8 +22,19 @@ export default function CalendarView() {
   const [selectedUser, setSelectedUser] = useState('')
   const [selectedEquipment, setSelectedEquipment] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const { user } = useAuth()
   const calendarRef = useRef(null)
+
+  // 모바일 화면 감지
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // 초기 데이터 로딩
   useEffect(() => {
@@ -34,6 +45,14 @@ export default function CalendarView() {
   useEffect(() => {
     fetchFilteredReservations()
   }, [selectedUser, selectedEquipment])
+
+  // 모바일 기기에서 적절한 기본 뷰 설정
+  useEffect(() => {
+    if (isMobile && view === 'dayGridMonth') {
+      // 모바일에서는 주간 뷰를 기본으로 설정
+      handleViewChange('timeGridDay')
+    }
+  }, [isMobile])
 
   // 모든 데이터 로딩
   const fetchData = async () => {
@@ -239,14 +258,16 @@ export default function CalendarView() {
         <div className="flex flex-col sm:flex-row gap-4">
           {/* 뷰 선택 */}
           <div className="flex space-x-2">
-            <button
-              onClick={() => handleViewChange('dayGridMonth')}
-              className={`px-3 py-1.5 text-sm rounded-md ${
-                view === 'dayGridMonth' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              월간
-            </button>
+            {!isMobile && (
+              <button
+                onClick={() => handleViewChange('dayGridMonth')}
+                className={`px-3 py-1.5 text-sm rounded-md ${
+                  view === 'dayGridMonth' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                월간
+              </button>
+            )}
             <button
               onClick={() => handleViewChange('timeGridWeek')}
               className={`px-3 py-1.5 text-sm rounded-md ${
@@ -328,7 +349,7 @@ export default function CalendarView() {
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
+          initialView={isMobile ? "timeGridDay" : "dayGridMonth"}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
@@ -337,7 +358,7 @@ export default function CalendarView() {
           events={events}
           selectable={true}
           selectMirror={true}
-          dayMaxEvents={true}
+          dayMaxEvents={isMobile ? 2 : true}
           weekends={true}
           locale={koLocale}
           height="auto"
@@ -346,6 +367,13 @@ export default function CalendarView() {
           allDaySlot={false}
           slotMinTime="08:00:00"
           slotMaxTime="20:00:00"
+          expandRows={!isMobile}
+          stickyHeaderDates={true}
+          eventTimeFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          }}
         />
       </div>
       
@@ -416,7 +444,7 @@ export default function CalendarView() {
                       />
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className={isMobile ? "space-y-4" : "grid grid-cols-2 gap-4"}>
                       <div>
                         <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
                           시작 시간
@@ -458,17 +486,17 @@ export default function CalendarView() {
                       </div>
                     </div>
                     
-                    <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                    <div className={isMobile ? "flex flex-col space-y-3 mt-6" : "mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3"}>
                       <button
                         type="submit"
-                        className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:col-start-2"
+                        className={`inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${!isMobile && 'sm:col-start-2'}`}
                       >
                         {selectedReservation ? '저장' : '생성'}
                       </button>
                       
                       <button
                         type="button"
-                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+                        className={`mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 ${!isMobile && 'sm:col-start-1 sm:mt-0'}`}
                         onClick={() => setModalOpen(false)}
                       >
                         취소
