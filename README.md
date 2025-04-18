@@ -74,4 +74,4 @@ docker-compose up -d
 
 ## 개발자
 
-- 김영도
+- 김영두
