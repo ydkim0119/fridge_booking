@@ -4,8 +4,8 @@ const User = require('../models/User');
 const { protect, admin } = require('../middleware/auth');
 const router = express.Router();
 
-// 모든 사용자 조회 (관리자 전용)
-router.get('/', [protect, admin], async (req, res) => {
+// 모든 사용자 조회 (모든 사용자 접근 가능)
+router.get('/', async (req, res) => {
   try {
     const users = await User.find().select('-password').sort({ name: 1 });
     res.json(users);
@@ -114,8 +114,41 @@ router.put('/:id', [protect, [
   }
 });
 
-// 사용자 삭제 (관리자 전용)
-router.delete('/:id', [protect, admin], async (req, res) => {
+// 사용자 생성 API 추가
+router.post('/', async (req, res) => {
+  try {
+    const { name, email, department, password = "password123" } = req.body;
+    
+    // 이메일 중복 확인
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: '이미 사용 중인 이메일입니다' });
+    }
+    
+    // 새 사용자 생성
+    const user = new User({
+      name,
+      email,
+      password,
+      department,
+    });
+    
+    await user.save();
+    
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      department: user.department,
+    });
+  } catch (error) {
+    console.error('사용자 생성 에러:', error);
+    res.status(500).json({ message: '서버 에러가 발생했습니다' });
+  }
+});
+
+// 사용자 삭제 (모든 사용자 접근 가능)
+router.delete('/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
