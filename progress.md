@@ -11,7 +11,7 @@ The goal of this project is to develop a refrigerator booking system for managin
 The frontend of the project is well-developed using React and includes the following pages and components:
 
 - **Dashboard**: Displays an overview of upcoming reservations and equipment status.
-- **Calendar View**: Provides a calendar interface for viewing and managing reservations. Supports monthly, weekly, and daily views with mobile optimization.
+- **Calendar View**: Provides a calendar interface for viewing and managing reservations. Supports monthly and weekly views with mobile optimization.
 - **Stats Dashboard**: Displays usage statistics and patterns for the refrigeration equipment.
 - **Profile Page**: Shows user details.
 - **Admin Panel**: Provides an interface for managing users and equipment without requiring admin privileges.
@@ -42,7 +42,7 @@ The backend of the project is implemented using Node.js and Express and includes
 
 - **Responsive Design**: All components are fully responsive for various screen sizes.
 - **Mobile-optimized Calendar**: The calendar view automatically adapts to mobile screens:
-  - Switches to daily view on small screens
+  - Switches to weekly view on small screens
   - Adjusts layout for touch-friendly interface
   - Simplified controls for mobile users
 - **Touch-friendly Forms**: Form inputs and controls are properly sized for touch interaction.
@@ -60,11 +60,16 @@ The backend of the project is implemented using Node.js and Express and includes
 
 ### Latest Updates (2025-04-19)
 
+- **Day-Based Reservations**: Changed the reservation system from time-based to day-based for simpler scheduling.
+- **Calendar Visualization**: Updated the calendar to display all-day events for better visibility of reservations.
+- **Form Simplification**: Replaced time inputs with date-only inputs for easier reservation creation.
+- **Statistics Page Fix**: Fixed issues with the statistics page displaying a blank screen.
+- **API Integration Improvement**: Enhanced API error handling with fallback to dummy data.
+- **Mobile Interface Enhancement**: Improved mobile layout with simplified controls and better touch interaction.
 - **Calendar Interaction Improvement**: Fixed issue where calendar clicks were not responding properly.
 - **Form Elements Enhancement**: Updated form elements styling for better usability.
 - **Quick Reservation Feature**: Added "New Reservation" button in layout for quick reservation creation.
 - **Lazy Loading Implementation**: Added lazy loading for non-critical components to improve initial load time.
-- **Mobile Interface Enhancement**: Improved mobile layout with simplified controls and better touch interaction.
 - **Fixed Page Refresh Issue**: Resolved problem with continuous page refresh on the first load.
 - **User Experience Improvements**: Added feedback on actions and simplified the reservation flow.
 - **Event Handling Optimization**: Fixed event propagation issues in calendar interactions.
@@ -102,12 +107,13 @@ The backend of the project is implemented using Node.js and Express and includes
 ### Key Features Implemented
 
 1. **Calendar Interface**: 
-   - Monthly, weekly, and daily calendar views
+   - Monthly and weekly calendar views
    - Visual representation of reservations
    - Interface for creating and managing reservations
    - Filtering capabilities by user and equipment
    - Mobile-optimized views
    - One-click reservation creation
+   - Day-based booking system
 
 2. **Equipment Management**:
    - CRUD operations for equipment
@@ -115,7 +121,7 @@ The backend of the project is implemented using Node.js and Express and includes
    - Color coding for easy identification
 
 3. **Reservation System**:
-   - Date and time slot selection
+   - Day-based reservation selection
    - User and equipment association
    - Filtering by user and equipment
    - Title and notes for reservations
