@@ -380,3 +380,297 @@ export default function CalendarView() {
     setSelectedUser('');
     setSelectedEquipment('');
   }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <h1 className="text-2xl font-semibold">예약 캘린더</h1>
+        
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* 뷰 선택 */}
+          <div className="flex space-x-2 overflow-x-auto">
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={() => handleViewChange('dayGridMonth')}
+                className={`px-3 py-1.5 text-sm rounded-md ${
+                  view === 'dayGridMonth' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                월간
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => handleViewChange('dayGridWeek')}
+              className={`px-3 py-1.5 text-sm rounded-md ${
+                view === 'dayGridWeek' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              주간
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* 필터 컨트롤 */}
+      <div className="bg-white p-4 rounded-lg shadow">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
+          <h2 className="text-lg font-medium">필터</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label htmlFor="userFilter" className="block text-sm font-medium text-gray-700 mb-1">
+              사용자
+            </label>
+            <select
+              id="userFilter"
+              value={selectedUser}
+              onChange={handleUserFilterChange}
+              className="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+            >
+              <option value="">모든 사용자</option>
+              {users.map(userItem => (
+                <option key={userItem.id} value={userItem.id}>{userItem.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label htmlFor="equipmentFilter" className="block text-sm font-medium text-gray-700 mb-1">
+              장비
+            </label>
+            <select
+              id="equipmentFilter"
+              value={selectedEquipment}
+              onChange={handleEquipmentFilterChange}
+              className="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+            >
+              <option value="">모든 장비</option>
+              {equipment.map(item => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md w-full sm:w-auto"
+            >
+              필터 초기화
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* 로딩 인디케이터 */}
+      {loading && (
+        <div className="flex justify-center my-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )}
+      
+      {/* 캘린더 */}
+      <div className="bg-white p-4 rounded-lg shadow">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView={isMobile ? "dayGridWeek" : "dayGridMonth"}
+          headerToolbar={{
+            left: 'prev,next today',
+            center: 'title',
+            right: ''
+          }}
+          events={events}
+          selectable={true}
+          selectMirror={true}
+          dayMaxEvents={isMobile ? 2 : true}
+          weekends={true}
+          locale={koLocale}
+          height="auto"
+          select={handleDateSelect}
+          eventClick={handleEventClick}
+          expandRows={!isMobile}
+          stickyHeaderDates={true}
+        />
+      </div>
+      
+      {/* 예약 생성/수정 모달 */}
+      <Transition.Root show={modalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={setModalOpen}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 z-10 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              >
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                  <div>
+                    <div className="mt-3 text-center sm:mt-5">
+                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                        {selectedReservation ? '예약 수정' : '새 예약 생성'}
+                      </Dialog.Title>
+                    </div>
+                  </div>
+                  
+                  <form onSubmit={handleFormSubmit} className="mt-5 space-y-4">
+                    {/* 제목 필드 */}
+                    <div>
+                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                        제목
+                      </label>
+                      <input
+                        type="text"
+                        name="title"
+                        id="title"
+                        required
+                        defaultValue={selectedReservation?.title || ''}
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                        placeholder="예약 제목"
+                      />
+                    </div>
+                    
+                    {/* 사용자 선택 필드 추가 */}
+                    <div>
+                      <label htmlFor="user" className="block text-sm font-medium text-gray-700">
+                        사용자
+                      </label>
+                      <select
+                        name="user"
+                        id="user"
+                        required
+                        defaultValue={selectedReservation?.user || ''}
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                      >
+                        <option value="" disabled>선택하세요</option>
+                        {users.map(item => (
+                          <option key={item.id} value={item.id}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  
+                    <div>
+                      <label htmlFor="equipment" className="block text-sm font-medium text-gray-700">
+                        장비
+                      </label>
+                      <select
+                        name="equipment"
+                        id="equipment"
+                        required
+                        defaultValue={selectedReservation?.equipment || ''}
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                      >
+                        <option value="" disabled>선택하세요</option>
+                        {equipment.map(item => (
+                          <option key={item.id} value={item.id}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                        설명
+                      </label>
+                      <textarea
+                        name="description"
+                        id="description"
+                        rows={3}
+                        defaultValue={selectedReservation?.notes || ''}
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                      />
+                    </div>
+                    
+                    <div className={isMobile ? "space-y-4" : "grid grid-cols-2 gap-4"}>
+                      <div>
+                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                          시작 날짜
+                        </label>
+                        <input
+                          type="date"
+                          name="startDate"
+                          id="startDate"
+                          required
+                          defaultValue={
+                            selectedReservation?.startDate || 
+                            (selectedDate ? selectedDate.start : '')
+                          }
+                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+                          종료 날짜
+                        </label>
+                        <input
+                          type="date"
+                          name="endDate"
+                          id="endDate"
+                          required
+                          defaultValue={
+                            selectedReservation?.endDate || 
+                            (selectedDate ? selectedDate.end : '')
+                          }
+                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className={isMobile ? "flex flex-col space-y-3 mt-6" : "mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3"}>
+                      <button
+                        type="submit"
+                        className={`inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${!isMobile && 'sm:col-start-2'}`}
+                      >
+                        {selectedReservation ? '저장' : '생성'}
+                      </button>
+                      
+                      <button
+                        type="button"
+                        className={`mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 ${!isMobile && 'sm:col-start-1 sm:mt-0'}`}
+                        onClick={() => setModalOpen(false)}
+                      >
+                        취소
+                      </button>
+                    </div>
+                    
+                    {selectedReservation && (
+                      <div className="mt-3 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={handleDelete}
+                          className="text-sm text-red-600 hover:text-red-500"
+                        >
+                          예약 삭제
+                        </button>
+                      </div>
+                    )}
+                  </form>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
+    </div>
+  )
+}
