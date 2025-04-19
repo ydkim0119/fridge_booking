@@ -1,5 +1,5 @@
-import { Fragment, useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Fragment, useState, useEffect } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Dialog, Menu, Transition } from '@headlessui/react'
 import {
   Bars3Icon,
@@ -9,6 +9,7 @@ import {
   UsersIcon,
   XMarkIcon,
   UserCircleIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline'
 
 function classNames(...classes) {
@@ -17,18 +18,67 @@ function classNames(...classes) {
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   
+  // 모바일 화면 감지
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  
+  // 새 예약 만들기 핸들러
+  const handleNewReservation = () => {
+    navigate('/calendar')
+    // 시간 지연을 두어 캘린더 페이지가 로드된 후 이벤트를 발생시킴
+    setTimeout(() => {
+      const now = new Date()
+      const event = new CustomEvent('create-reservation', {
+        detail: {
+          start: now.toISOString(),
+          end: new Date(now.getTime() + 60 * 60 * 1000).toISOString() // 1시간 후
+        }
+      })
+      window.dispatchEvent(event)
+    }, 100)
+  }
+  
+  // 네비게이션 항목
   const navigation = [
-    { name: '대시보드', href: '/dashboard', icon: HomeIcon, current: pathname === '/dashboard' },
-    { name: '캘린더', href: '/calendar', icon: CalendarDaysIcon, current: pathname === '/calendar' },
-    { name: '통계', href: '/stats', icon: ChartBarIcon, current: pathname === '/stats' },
+    { 
+      name: '대시보드', 
+      href: '/dashboard', 
+      icon: HomeIcon, 
+      current: pathname === '/dashboard' || pathname === '/' 
+    },
+    { 
+      name: '캘린더', 
+      href: '/calendar', 
+      icon: CalendarDaysIcon, 
+      current: pathname === '/calendar' 
+    },
+    { 
+      name: '통계', 
+      href: '/stats', 
+      icon: ChartBarIcon, 
+      current: pathname === '/stats' 
+    },
     // 모든 사용자에게 관리자 메뉴 표시
-    { name: '장비/사용자 관리', href: '/admin', icon: UsersIcon, current: pathname === '/admin' }
+    { 
+      name: '장비/사용자 관리', 
+      href: '/admin', 
+      icon: UsersIcon, 
+      current: pathname === '/admin' 
+    }
   ]
 
   return (
-    <div className="h-full">
+    <div className="h-full bg-gray-50">
       <Transition.Root show={sidebarOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
           <Transition.Child
@@ -64,16 +114,20 @@ export default function Layout() {
                   leaveTo="opacity-0"
                 >
                   <div className="absolute left-full top-0 flex w-16 justify-center pt-5">
-                    <button type="button" className="-m-2.5 p-2.5" onClick={() => setSidebarOpen(false)}>
-                      <span className="sr-only">Close sidebar</span>
-                      <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                    <button 
+                      type="button" 
+                      className="-m-2.5 p-2.5 bg-white rounded-full shadow-md" 
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <span className="sr-only">사이드바 닫기</span>
+                      <XMarkIcon className="h-6 w-6 text-gray-700" aria-hidden="true" />
                     </button>
                   </div>
                 </Transition.Child>
                 
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-2">
+                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
                   <div className="flex h-16 shrink-0 items-center">
-                    <h1 className="text-xl font-bold">SQuIRL 냉동기 예약</h1>
+                    <h1 className="text-xl font-bold text-gray-900">SQuIRL 냉동기 예약</h1>
                   </div>
                   <nav className="flex flex-1 flex-col">
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -85,8 +139,8 @@ export default function Layout() {
                                 to={item.href}
                                 className={classNames(
                                   item.current
-                                    ? 'bg-gray-50 text-blue-600'
-                                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50',
+                                    ? 'bg-blue-50 text-blue-600'
+                                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50',
                                   'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                                 )}
                                 onClick={() => setSidebarOpen(false)}
@@ -104,6 +158,37 @@ export default function Layout() {
                           ))}
                         </ul>
                       </li>
+                      
+                      {/* 빠른 예약 버튼 */}
+                      <li className="mt-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleNewReservation()
+                            setSidebarOpen(false)
+                          }}
+                          className="w-full flex items-center gap-x-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
+                        >
+                          <PlusIcon className="h-5 w-5" aria-hidden="true" />
+                          새 예약 만들기
+                        </button>
+                      </li>
+                      
+                      <li className="-mx-6 mt-2">
+                        <Link
+                          to="/profile"
+                          className={classNames(
+                            pathname === '/profile'
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50',
+                            'flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6'
+                          )}
+                          onClick={() => setSidebarOpen(false)}
+                        >
+                          <UserCircleIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
+                          <span aria-hidden="true">내 프로필</span>
+                        </Link>
+                      </li>
                     </ul>
                   </nav>
                 </div>
@@ -117,7 +202,7 @@ export default function Layout() {
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
           <div className="flex h-16 shrink-0 items-center">
-            <h1 className="text-xl font-bold">SQuIRL 냉동기 예약</h1>
+            <h1 className="text-xl font-bold text-gray-900">SQuIRL 냉동기 예약</h1>
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -129,8 +214,8 @@ export default function Layout() {
                         to={item.href}
                         className={classNames(
                           item.current
-                            ? 'bg-gray-50 text-blue-600'
-                            : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50',
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50',
                           'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                         )}
                       >
@@ -147,19 +232,31 @@ export default function Layout() {
                   ))}
                 </ul>
               </li>
-              <li className="-mx-6 mt-auto">
+              
+              {/* 빠른 예약 버튼 */}
+              <li className="mt-auto">
+                <button
+                  type="button"
+                  onClick={handleNewReservation}
+                  className="flex w-full items-center gap-x-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
+                >
+                  <PlusIcon className="h-5 w-5" aria-hidden="true" />
+                  새 예약 만들기
+                </button>
+              </li>
+              
+              <li className="-mx-6 mt-2">
                 <Link
                   to="/profile"
                   className={classNames(
                     pathname === '/profile'
-                      ? 'bg-gray-50 text-blue-600'
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50',
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50',
                     'flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6'
                   )}
                 >
                   <UserCircleIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
-                  <span className="sr-only">Your profile</span>
-                  <span aria-hidden="true">사용자 프로필</span>
+                  <span aria-hidden="true">내 프로필</span>
                 </Link>
               </li>
             </ul>
@@ -168,19 +265,30 @@ export default function Layout() {
       </div>
 
       {/* 모바일 헤더 */}
-      <div className="sticky top-0 z-40 flex items-center gap-x-6 bg-white px-4 py-4 shadow-sm sm:px-6 lg:hidden">
+      <div className="sticky top-0 z-40 flex items-center gap-x-4 bg-white px-4 py-3 shadow-sm sm:px-6 lg:hidden">
         <button
           type="button"
           className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
           onClick={() => setSidebarOpen(true)}
         >
-          <span className="sr-only">Open sidebar</span>
+          <span className="sr-only">사이드바 열기</span>
           <Bars3Icon className="h-6 w-6" aria-hidden="true" />
         </button>
         <div className="flex-1 text-sm font-semibold leading-6 text-gray-900">SQuIRL 냉동기 예약</div>
+        
+        {/* 빠른 예약 버튼 (모바일) */}
+        <button
+          type="button"
+          onClick={handleNewReservation}
+          className="rounded-full bg-blue-600 p-1.5 text-white shadow-sm hover:bg-blue-500"
+        >
+          <PlusIcon className="h-5 w-5" aria-hidden="true" />
+          <span className="sr-only">새 예약 만들기</span>
+        </button>
+        
         <Menu as="div" className="relative">
           <Menu.Button className="-m-1.5 flex items-center p-1.5">
-            <span className="sr-only">Open user menu</span>
+            <span className="sr-only">사용자 메뉴 열기</span>
             <UserCircleIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
           </Menu.Button>
           <Transition
@@ -202,7 +310,7 @@ export default function Layout() {
                       'block px-3 py-1 text-sm leading-6 text-gray-900'
                     )}
                   >
-                    프로필
+                    내 프로필
                   </Link>
                 )}
               </Menu.Item>
@@ -211,7 +319,7 @@ export default function Layout() {
         </Menu>
       </div>
 
-      <main className="py-10 lg:pl-72">
+      <main className="py-4 lg:py-8 lg:pl-72">
         <div className="px-4 sm:px-6 lg:px-8">
           <Outlet />
         </div>
