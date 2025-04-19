@@ -39,6 +39,24 @@ export default function CalendarView() {
     return () => window.removeEventListener('resize', handleResize)
   }, [view])
 
+  // 레이아웃에서 새 예약 이벤트 감지
+  useEffect(() => {
+    const handleCreateReservation = (event) => {
+      if (event.detail) {
+        setSelectedDate({
+          start: event.detail.start,
+          end: event.detail.end,
+          allDay: false
+        })
+        setSelectedReservation(null)
+        setModalOpen(true)
+      }
+    }
+    
+    window.addEventListener('create-reservation', handleCreateReservation)
+    return () => window.removeEventListener('create-reservation', handleCreateReservation)
+  }, [])
+
   // 초기 데이터 로딩
   useEffect(() => {
     try {
