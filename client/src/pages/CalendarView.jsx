@@ -41,66 +41,66 @@ export default function CalendarView() {
 
   // 초기 데이터 로딩
   useEffect(() => {
-    // 더미 데이터로 초기화 (실제 환경에서는 API 호출로 변경)
-    const usersData = [
-      { id: 1, name: '김철수', email: 'user1@example.com', department: '화학과' },
-      { id: 2, name: '박영희', email: 'user2@example.com', department: '생물학과' },
-      { id: 3, name: '이지훈', email: 'user3@example.com', department: '물리학과' },
-      { id: 4, name: '정민지', email: 'admin@example.com', department: '관리부서' },
-    ]
-    
-    const equipmentData = [
-      { id: 1, name: '냉동기 1', description: '일반용 냉동기', location: '1층 실험실', color: '#3B82F6' },
-      { id: 2, name: '냉동기 2', description: '식품용 냉동기', location: '2층 실험실', color: '#10B981' },
-      { id: 3, name: '냉동기 3', description: '시약용 냉동기', location: '2층 실험실', color: '#F59E0B' },
-      { id: 4, name: '냉동기 4', description: '시료 보관용', location: '3층 실험실', color: '#EF4444' },
-      { id: 5, name: '초저온냉동기', description: '-80℃ 보관용', location: '지하 1층', color: '#8B5CF6' },
-    ]
-    
-    const reservationsData = [
-      {
-        id: 1,
-        title: '시료 냉동 보관',
-        user: 1,
-        equipment: 1,
-        startTime: '2025-04-19T09:00:00',
-        endTime: '2025-04-19T11:00:00',
-        notes: '분자생물학 실험 시료'
-      },
-      {
-        id: 2,
-        title: '저온 실험',
-        user: 2,
-        equipment: 3,
-        startTime: '2025-04-19T13:00:00',
-        endTime: '2025-04-19T15:00:00',
-        notes: '효소 활성도 실험'
-      },
-      {
-        id: 3,
-        title: '초저온 보존',
-        user: 3,
-        equipment: 5,
-        startTime: '2025-04-20T10:00:00',
-        endTime: '2025-04-20T12:00:00',
-        notes: '세포 보존'
-      }
-    ]
-    
-    setUsers(usersData)
-    setEquipment(equipmentData)
-    setReservations(reservationsData)
-    setLoading(false)
+    try {
+      setLoading(true)
+      // 더미 데이터로 초기화 (실제 환경에서는 API 호출로 변경)
+      const usersData = [
+        { id: 1, name: '김철수', email: 'user1@example.com', department: '화학과' },
+        { id: 2, name: '박영희', email: 'user2@example.com', department: '생물학과' },
+        { id: 3, name: '이지훈', email: 'user3@example.com', department: '물리학과' },
+        { id: 4, name: '정민지', email: 'admin@example.com', department: '관리부서' },
+      ]
+      
+      const equipmentData = [
+        { id: 1, name: '냉동기 1', description: '일반용 냉동기', location: '1층 실험실', color: '#3B82F6' },
+        { id: 2, name: '냉동기 2', description: '식품용 냉동기', location: '2층 실험실', color: '#10B981' },
+        { id: 3, name: '냉동기 3', description: '시약용 냉동기', location: '2층 실험실', color: '#F59E0B' },
+        { id: 4, name: '냉동기 4', description: '시료 보관용', location: '3층 실험실', color: '#EF4444' },
+        { id: 5, name: '초저온냉동기', description: '-80℃ 보관용', location: '지하 1층', color: '#8B5CF6' },
+      ]
+      
+      const reservationsData = [
+        {
+          id: 1,
+          title: '시료 냉동 보관',
+          user: 1,
+          equipment: 1,
+          startTime: '2025-04-19T09:00:00',
+          endTime: '2025-04-19T11:00:00',
+          notes: '분자생물학 실험 시료'
+        },
+        {
+          id: 2,
+          title: '저온 실험',
+          user: 2,
+          equipment: 3,
+          startTime: '2025-04-19T13:00:00',
+          endTime: '2025-04-19T15:00:00',
+          notes: '효소 활성도 실험'
+        },
+        {
+          id: 3,
+          title: '초저온 보존',
+          user: 3,
+          equipment: 5,
+          startTime: '2025-04-20T10:00:00',
+          endTime: '2025-04-20T12:00:00',
+          notes: '세포 보존'
+        }
+      ]
+      
+      setUsers(usersData)
+      setEquipment(equipmentData)
+      setReservations(reservationsData)
+    } catch (error) {
+      console.error('데이터 로딩 에러:', error)
+      toast.error('데이터를 불러오는데 실패했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   // 필터링된 예약 가져오기
-  useEffect(() => {
-    // 필터링 로직 구현
-    const filtered = getFilteredReservations();
-    setReservations(filtered);
-  }, [selectedUser, selectedEquipment])
-
-  // 필터링 함수
   const getFilteredReservations = () => {
     // 더미 데이터 (실제로는 API 호출로 대체될 것)
     const allReservations = [
@@ -149,6 +149,17 @@ export default function CalendarView() {
     });
   }
 
+  // 필터 변경 시 예약 목록 업데이트
+  useEffect(() => {
+    try {
+      const filtered = getFilteredReservations();
+      setReservations(filtered);
+    } catch (error) {
+      console.error('필터링 에러:', error);
+      toast.error('예약 필터링에 실패했습니다.');
+    }
+  }, [selectedUser, selectedEquipment])
+
   // 예약 생성 함수
   const createReservation = async (formData) => {
     try {
@@ -163,7 +174,7 @@ export default function CalendarView() {
         notes: formData.notes
       };
       
-      setReservations([...reservations, newReservation]);
+      setReservations(prev => [...prev, newReservation]);
       toast.success('예약이 생성되었습니다.');
       return true;
     } catch (error) {
@@ -218,21 +229,39 @@ export default function CalendarView() {
 
   // 날짜 선택 핸들러
   const handleDateSelect = (selectInfo) => {
+    const now = new Date();
+    const startDate = new Date(selectInfo.start);
+    const endDate = new Date(selectInfo.end);
+    
+    // 시간 설정 (기본값: 현재 시간 ~ 1시간 후)
+    if (selectInfo.allDay) {
+      startDate.setHours(now.getHours());
+      startDate.setMinutes(0);
+      endDate.setTime(startDate.getTime() + 60 * 60 * 1000); // 1시간 후
+    }
+    
     setSelectedDate({
-      start: selectInfo.startStr,
-      end: selectInfo.endStr,
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
       allDay: selectInfo.allDay
     });
+    
     setSelectedReservation(null);
     setModalOpen(true);
   }
 
   // 예약 클릭 핸들러
   const handleEventClick = (clickInfo) => {
-    const reservation = reservations.find(res => res.id.toString() === clickInfo.event.id);
-    setSelectedReservation(reservation);
-    setSelectedDate(null);
-    setModalOpen(true);
+    const eventId = parseInt(clickInfo.event.id);
+    const reservation = reservations.find(res => res.id === eventId);
+    
+    if (reservation) {
+      setSelectedReservation(reservation);
+      setSelectedDate(null);
+      setModalOpen(true);
+    } else {
+      toast.error('예약 정보를 찾을 수 없습니다.');
+    }
   }
   
   // 캘린더에 표시할 이벤트 데이터
@@ -257,10 +286,15 @@ export default function CalendarView() {
 
   // 뷰 변경 핸들러
   const handleViewChange = (viewType) => {
-    setView(viewType);
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.changeView(viewType);
+    try {
+      setView(viewType);
+      if (calendarRef.current) {
+        const calendarApi = calendarRef.current.getApi();
+        calendarApi.changeView(viewType);
+      }
+    } catch (error) {
+      console.error('뷰 변경 에러:', error);
+      toast.error('캘린더 뷰 변경에 실패했습니다.');
     }
   }
 
@@ -268,27 +302,32 @@ export default function CalendarView() {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     
-    const formData = {
-      title: e.target.title.value,
-      user: e.target.user.value,
-      equipment: e.target.equipment.value,
-      startTime: e.target.startTime.value,
-      endTime: e.target.endTime.value,
-      notes: e.target.description.value
-    };
-    
-    let success = false;
-    
-    if (selectedReservation) {
-      // 예약 수정
-      success = await updateReservation(selectedReservation.id, formData);
-    } else {
-      // 새 예약 생성
-      success = await createReservation(formData);
-    }
-    
-    if (success) {
-      setModalOpen(false);
+    try {
+      const formData = {
+        title: e.target.title.value,
+        user: e.target.user.value,
+        equipment: e.target.equipment.value,
+        startTime: e.target.startTime.value,
+        endTime: e.target.endTime.value,
+        notes: e.target.description.value
+      };
+      
+      let success = false;
+      
+      if (selectedReservation) {
+        // 예약 수정
+        success = await updateReservation(selectedReservation.id, formData);
+      } else {
+        // 새 예약 생성
+        success = await createReservation(formData);
+      }
+      
+      if (success) {
+        setModalOpen(false);
+      }
+    } catch (error) {
+      console.error('폼 제출 에러:', error);
+      toast.error('예약 처리 중 오류가 발생했습니다.');
     }
   }
 
@@ -296,12 +335,17 @@ export default function CalendarView() {
   const handleDelete = async () => {
     if (!selectedReservation) return;
     
-    const confirmed = window.confirm('정말로 이 예약을 삭제하시겠습니까?');
-    if (!confirmed) return;
-    
-    const success = await deleteReservation(selectedReservation.id);
-    if (success) {
-      setModalOpen(false);
+    try {
+      const confirmed = window.confirm('정말로 이 예약을 삭제하시겠습니까?');
+      if (!confirmed) return;
+      
+      const success = await deleteReservation(selectedReservation.id);
+      if (success) {
+        setModalOpen(false);
+      }
+    } catch (error) {
+      console.error('삭제 에러:', error);
+      toast.error('예약 삭제 중 오류가 발생했습니다.');
     }
   }
 
@@ -330,6 +374,7 @@ export default function CalendarView() {
           <div className="flex space-x-2 overflow-x-auto">
             {!isMobile && (
               <button
+                type="button"
                 onClick={() => handleViewChange('dayGridMonth')}
                 className={`px-3 py-1.5 text-sm rounded-md ${
                   view === 'dayGridMonth' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
@@ -339,6 +384,7 @@ export default function CalendarView() {
               </button>
             )}
             <button
+              type="button"
               onClick={() => handleViewChange('timeGridWeek')}
               className={`px-3 py-1.5 text-sm rounded-md ${
                 view === 'timeGridWeek' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
@@ -347,6 +393,7 @@ export default function CalendarView() {
               주간
             </button>
             <button
+              type="button"
               onClick={() => handleViewChange('timeGridDay')}
               className={`px-3 py-1.5 text-sm rounded-md ${
                 view === 'timeGridDay' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
@@ -373,7 +420,7 @@ export default function CalendarView() {
               id="userFilter"
               value={selectedUser}
               onChange={handleUserFilterChange}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
             >
               <option value="">모든 사용자</option>
               {users.map(userItem => (
@@ -390,7 +437,7 @@ export default function CalendarView() {
               id="equipmentFilter"
               value={selectedEquipment}
               onChange={handleEquipmentFilterChange}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
             >
               <option value="">모든 장비</option>
               {equipment.map(item => (
@@ -401,6 +448,7 @@ export default function CalendarView() {
           
           <div className="flex items-end">
             <button
+              type="button"
               onClick={handleClearFilters}
               className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md w-full sm:w-auto"
             >
@@ -497,7 +545,7 @@ export default function CalendarView() {
                         id="title"
                         required
                         defaultValue={selectedReservation?.title || ''}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                         placeholder="예약 제목"
                       />
                     </div>
@@ -512,7 +560,7 @@ export default function CalendarView() {
                         id="user"
                         required
                         defaultValue={selectedReservation?.user || ''}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                       >
                         <option value="" disabled>선택하세요</option>
                         {users.map(item => (
@@ -530,7 +578,7 @@ export default function CalendarView() {
                         id="equipment"
                         required
                         defaultValue={selectedReservation?.equipment || ''}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                       >
                         <option value="" disabled>선택하세요</option>
                         {equipment.map(item => (
@@ -548,7 +596,7 @@ export default function CalendarView() {
                         id="description"
                         rows={3}
                         defaultValue={selectedReservation?.notes || ''}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                       />
                     </div>
                     
@@ -569,7 +617,7 @@ export default function CalendarView() {
                                 ? format(new Date(selectedDate.start), "yyyy-MM-dd'T'HH:mm")
                                 : ''
                           }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                         />
                       </div>
                       
@@ -589,7 +637,7 @@ export default function CalendarView() {
                                 ? format(new Date(selectedDate.end), "yyyy-MM-dd'T'HH:mm")
                                 : ''
                           }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                         />
                       </div>
                     </div>
