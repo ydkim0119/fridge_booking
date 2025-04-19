@@ -24,8 +24,57 @@ export default function StatsDashboard() {
     const fetchStats = async () => {
       try {
         setLoading(true)
-        const response = await axios.get(`/api/stats?timeRange=${timeRange}`)
-        setStats(response.data)
+        
+        // 실제 API 호출 시도
+        try {
+          const response = await axios.get(`/api/stats?timeRange=${timeRange}`)
+          setStats(response.data)
+        } catch (apiError) {
+          console.error('API 호출 실패, 더미 데이터로 대체:', apiError)
+          
+          // API 실패 시 더미 데이터 사용
+          const equipmentUsageData = [
+            { name: '냉장고 1', usage: 24 },
+            { name: '냉장고 2', usage: 18 },
+            { name: '냉장고 3', usage: 32 },
+            { name: '냉장고 4', usage: 15 },
+            { name: '초저온냉장고', usage: 9 },
+          ]
+          
+          const userUsageData = [
+            { name: '김철수', usage: 12 },
+            { name: '박영희', usage: 8 },
+            { name: '이지훈', usage: 15 },
+            { name: '정민지', usage: 7 },
+            { name: '기타', usage: 10 },
+          ]
+          
+          const timeDistributionData = [
+            { name: '8-10시', usage: 15 },
+            { name: '10-12시', usage: 22 },
+            { name: '12-14시', usage: 18 },
+            { name: '14-16시', usage: 25 },
+            { name: '16-18시', usage: 20 },
+            { name: '18-20시', usage: 12 },
+          ]
+          
+          const weekdayUsageData = [
+            { name: '일', usage: 8 },
+            { name: '월', usage: 22 },
+            { name: '화', usage: 25 },
+            { name: '수', usage: 27 },
+            { name: '목', usage: 20 },
+            { name: '금', usage: 18 },
+            { name: '토', usage: 10 },
+          ]
+          
+          setStats({
+            equipmentUsage: equipmentUsageData,
+            userUsage: userUsageData,
+            timeDistribution: timeDistributionData,
+            weekdayUsage: weekdayUsageData
+          })
+        }
       } catch (error) {
         console.error('통계 데이터 로딩 에러:', error)
         toast.error('통계 데이터를 불러오는데 실패했습니다.')
@@ -35,53 +84,6 @@ export default function StatsDashboard() {
     }
     
     fetchStats()
-  }, [timeRange])
-
-  // 테스트용 더미 데이터
-  useEffect(() => {
-    // 실제 API가 구현되기 전에 더미 데이터로 시각화
-    const equipmentUsageData = [
-      { name: '냉장고 1', usage: 24 },
-      { name: '냉장고 2', usage: 18 },
-      { name: '냉장고 3', usage: 32 },
-      { name: '냉장고 4', usage: 15 },
-      { name: '초저온냉장고', usage: 9 },
-    ]
-    
-    const userUsageData = [
-      { name: '김철수', usage: 12 },
-      { name: '박영희', usage: 8 },
-      { name: '이지훈', usage: 15 },
-      { name: '정민지', usage: 7 },
-      { name: '기타', usage: 10 },
-    ]
-    
-    const timeDistributionData = [
-      { name: '8-10시', usage: 15 },
-      { name: '10-12시', usage: 22 },
-      { name: '12-14시', usage: 18 },
-      { name: '14-16시', usage: 25 },
-      { name: '16-18시', usage: 20 },
-      { name: '18-20시', usage: 12 },
-    ]
-    
-    const weekdayUsageData = [
-      { name: '일', usage: 8 },
-      { name: '월', usage: 22 },
-      { name: '화', usage: 25 },
-      { name: '수', usage: 27 },
-      { name: '목', usage: 20 },
-      { name: '금', usage: 18 },
-      { name: '토', usage: 10 },
-    ]
-    
-    setStats({
-      equipmentUsage: equipmentUsageData,
-      userUsage: userUsageData,
-      timeDistribution: timeDistributionData,
-      weekdayUsage: weekdayUsageData
-    })
-    setLoading(false)
   }, [timeRange])
 
   const handleTimeRangeChange = (e) => {
