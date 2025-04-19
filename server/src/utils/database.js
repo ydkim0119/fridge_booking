@@ -31,10 +31,10 @@ async function connectDB() {
     // MongoDB 연결 시도
     await mongoose.connect(MONGODB_URI, options);
     
-    // 연결 성공
+    // 연결 성공 - 비밀번호 노출 방지
     isConnected = true;
     connectionAttempts = 0; // 연결 시도 횟수 초기화
-    console.log('MongoDB 연결 성공: ', MONGODB_URI);
+    console.log('MongoDB 연결 성공!');
     
     // 연결 해제 이벤트 감지
     mongoose.connection.on('disconnected', () => {
