@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, addDays } from 'date-fns'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -29,9 +29,9 @@ export default function CalendarView() {
       const mobile = window.innerWidth < 768
       setIsMobile(mobile)
       
-      // 모바일에서 자동으로 일간 뷰로 전환
+      // 모바일에서 자동으로 주간 뷰로 전환 (일간 뷰에서 변경)
       if (mobile && view === 'dayGridMonth') {
-        handleViewChange('timeGridDay')
+        handleViewChange('dayGridWeek')
       }
     }
     
@@ -43,10 +43,14 @@ export default function CalendarView() {
   useEffect(() => {
     const handleCreateReservation = (event) => {
       if (event.detail) {
+        // 이벤트 상세 정보가 있으면 시작일만 설정하고 종료일은 하루 뒤로 설정
+        const startDate = event.detail.start ? new Date(event.detail.start) : new Date()
+        const endDate = addDays(startDate, 1) // 하루 단위 예약
+        
         setSelectedDate({
-          start: event.detail.start,
-          end: event.detail.end,
-          allDay: false
+          start: startDate.toISOString().split('T')[0],
+          end: endDate.toISOString().split('T')[0],
+          allDay: true
         })
         setSelectedReservation(null)
         setModalOpen(true)
@@ -77,14 +81,15 @@ export default function CalendarView() {
         { id: 5, name: '초저온냉동기', description: '-80℃ 보관용', location: '지하 1층', color: '#8B5CF6' },
       ]
       
+      // 일 단위 예약으로 더미 데이터 변경
       const reservationsData = [
         {
           id: 1,
           title: '시료 냉동 보관',
           user: 1,
           equipment: 1,
-          startTime: '2025-04-19T09:00:00',
-          endTime: '2025-04-19T11:00:00',
+          startDate: '2025-04-19',
+          endDate: '2025-04-20', // 종료일은 그 다음날로 설정 (FullCalendar의 end는 exclusive)
           notes: '분자생물학 실험 시료'
         },
         {
@@ -92,8 +97,8 @@ export default function CalendarView() {
           title: '저온 실험',
           user: 2,
           equipment: 3,
-          startTime: '2025-04-19T13:00:00',
-          endTime: '2025-04-19T15:00:00',
+          startDate: '2025-04-21',
+          endDate: '2025-04-22',
           notes: '효소 활성도 실험'
         },
         {
@@ -101,8 +106,8 @@ export default function CalendarView() {
           title: '초저온 보존',
           user: 3,
           equipment: 5,
-          startTime: '2025-04-20T10:00:00',
-          endTime: '2025-04-20T12:00:00',
+          startDate: '2025-04-23',
+          endDate: '2025-04-24',
           notes: '세포 보존'
         }
       ]
@@ -127,8 +132,8 @@ export default function CalendarView() {
         title: '시료 냉동 보관',
         user: 1,
         equipment: 1,
-        startTime: '2025-04-19T09:00:00',
-        endTime: '2025-04-19T11:00:00',
+        startDate: '2025-04-19',
+        endDate: '2025-04-20',
         notes: '분자생물학 실험 시료'
       },
       {
@@ -136,8 +141,8 @@ export default function CalendarView() {
         title: '저온 실험',
         user: 2,
         equipment: 3,
-        startTime: '2025-04-19T13:00:00',
-        endTime: '2025-04-19T15:00:00',
+        startDate: '2025-04-21',
+        endDate: '2025-04-22',
         notes: '효소 활성도 실험'
       },
       {
@@ -145,8 +150,8 @@ export default function CalendarView() {
         title: '초저온 보존',
         user: 3,
         equipment: 5,
-        startTime: '2025-04-20T10:00:00',
-        endTime: '2025-04-20T12:00:00',
+        startDate: '2025-04-23',
+        endDate: '2025-04-24',
         notes: '세포 보존'
       }
     ];
@@ -178,7 +183,7 @@ export default function CalendarView() {
     }
   }, [selectedUser, selectedEquipment])
 
-  // 예약 생성 함수
+  // 예약 생성 함수 (일 단위 예약으로 변경)
   const createReservation = async (formData) => {
     try {
       // API 없이 로컬 상태 업데이트
@@ -187,8 +192,8 @@ export default function CalendarView() {
         user: parseInt(formData.user),
         equipment: parseInt(formData.equipment),
         title: formData.title,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
         notes: formData.notes
       };
       
@@ -202,7 +207,7 @@ export default function CalendarView() {
     }
   }
 
-  // 예약 수정 함수
+  // 예약 수정 함수 (일 단위 예약으로 변경)
   const updateReservation = async (id, formData) => {
     try {
       // API 없이 로컬 상태 업데이트
@@ -213,8 +218,8 @@ export default function CalendarView() {
               title: formData.title,
               user: parseInt(formData.user),
               equipment: parseInt(formData.equipment),
-              startTime: formData.startTime,
-              endTime: formData.endTime,
+              startDate: formData.startDate,
+              endDate: formData.endDate,
               notes: formData.notes
             }
           : reservation
@@ -245,23 +250,16 @@ export default function CalendarView() {
     }
   }
 
-  // 날짜 선택 핸들러
+  // 날짜 선택 핸들러 (일 단위 예약으로 변경)
   const handleDateSelect = (selectInfo) => {
-    const now = new Date();
-    const startDate = new Date(selectInfo.start);
-    const endDate = new Date(selectInfo.end);
-    
-    // 시간 설정 (기본값: 현재 시간 ~ 1시간 후)
-    if (selectInfo.allDay) {
-      startDate.setHours(now.getHours());
-      startDate.setMinutes(0);
-      endDate.setTime(startDate.getTime() + 60 * 60 * 1000); // 1시간 후
-    }
+    // 선택한 날짜의 시작과 끝 (하루 단위)
+    const startDate = format(new Date(selectInfo.startStr), 'yyyy-MM-dd')
+    const endDate = format(new Date(selectInfo.endStr), 'yyyy-MM-dd')
     
     setSelectedDate({
-      start: startDate.toISOString(),
-      end: endDate.toISOString(),
-      allDay: selectInfo.allDay
+      start: startDate,
+      end: endDate,
+      allDay: true
     });
     
     setSelectedReservation(null);
@@ -282,7 +280,7 @@ export default function CalendarView() {
     }
   }
   
-  // 캘린더에 표시할 이벤트 데이터
+  // 캘린더에 표시할 이벤트 데이터 (일 단위 예약으로 변경)
   const events = reservations.map(reservation => {
     const equipmentItem = equipment.find(e => e.id === reservation.equipment) || {};
     const userItem = users.find(u => u.id === reservation.user) || { name: '사용자' };
@@ -290,10 +288,11 @@ export default function CalendarView() {
     return {
       id: reservation.id.toString(),
       title: `${reservation.title} - ${equipmentItem.name || '장비'} (${userItem.name})`,
-      start: reservation.startTime,
-      end: reservation.endTime,
+      start: reservation.startDate,
+      end: reservation.endDate,
       backgroundColor: equipmentItem.color || '#3788d8',
       borderColor: equipmentItem.color || '#3788d8',
+      allDay: true,
       extendedProps: {
         description: reservation.notes,
         equipment: reservation.equipment,
@@ -316,7 +315,7 @@ export default function CalendarView() {
     }
   }
 
-  // 폼 제출 핸들러
+  // 폼 제출 핸들러 (일 단위 예약으로 변경)
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     
@@ -325,8 +324,8 @@ export default function CalendarView() {
         title: e.target.title.value,
         user: e.target.user.value,
         equipment: e.target.equipment.value,
-        startTime: e.target.startTime.value,
-        endTime: e.target.endTime.value,
+        startDate: e.target.startDate.value,
+        endDate: e.target.endDate.value,
         notes: e.target.description.value
       };
       
@@ -381,320 +380,3 @@ export default function CalendarView() {
     setSelectedUser('');
     setSelectedEquipment('');
   }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h1 className="text-2xl font-semibold">예약 캘린더</h1>
-        
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* 뷰 선택 */}
-          <div className="flex space-x-2 overflow-x-auto">
-            {!isMobile && (
-              <button
-                type="button"
-                onClick={() => handleViewChange('dayGridMonth')}
-                className={`px-3 py-1.5 text-sm rounded-md ${
-                  view === 'dayGridMonth' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                }`}
-              >
-                월간
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => handleViewChange('timeGridWeek')}
-              className={`px-3 py-1.5 text-sm rounded-md ${
-                view === 'timeGridWeek' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              주간
-            </button>
-            <button
-              type="button"
-              onClick={() => handleViewChange('timeGridDay')}
-              className={`px-3 py-1.5 text-sm rounded-md ${
-                view === 'timeGridDay' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              일간
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* 필터 컨트롤 */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
-          <h2 className="text-lg font-medium">필터</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="userFilter" className="block text-sm font-medium text-gray-700 mb-1">
-              사용자
-            </label>
-            <select
-              id="userFilter"
-              value={selectedUser}
-              onChange={handleUserFilterChange}
-              className="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-            >
-              <option value="">모든 사용자</option>
-              {users.map(userItem => (
-                <option key={userItem.id} value={userItem.id}>{userItem.name}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label htmlFor="equipmentFilter" className="block text-sm font-medium text-gray-700 mb-1">
-              장비
-            </label>
-            <select
-              id="equipmentFilter"
-              value={selectedEquipment}
-              onChange={handleEquipmentFilterChange}
-              className="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-            >
-              <option value="">모든 장비</option>
-              {equipment.map(item => (
-                <option key={item.id} value={item.id}>{item.name}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md w-full sm:w-auto"
-            >
-              필터 초기화
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* 로딩 인디케이터 */}
-      {loading && (
-        <div className="flex justify-center my-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      )}
-      
-      {/* 캘린더 */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView={isMobile ? "timeGridDay" : "dayGridMonth"}
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: ''
-          }}
-          events={events}
-          selectable={true}
-          selectMirror={true}
-          dayMaxEvents={isMobile ? 2 : true}
-          weekends={true}
-          locale={koLocale}
-          height="auto"
-          select={handleDateSelect}
-          eventClick={handleEventClick}
-          allDaySlot={false}
-          slotMinTime="08:00:00"
-          slotMaxTime="20:00:00"
-          expandRows={!isMobile}
-          stickyHeaderDates={true}
-          eventTimeFormat={{
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          }}
-        />
-      </div>
-      
-      {/* 예약 생성/수정 모달 */}
-      <Transition.Root show={modalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-10" onClose={setModalOpen}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 z-10 overflow-y-auto">
-            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                enterTo="opacity-100 translate-y-0 sm:scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              >
-                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                  <div>
-                    <div className="mt-3 text-center sm:mt-5">
-                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                        {selectedReservation ? '예약 수정' : '새 예약 생성'}
-                      </Dialog.Title>
-                    </div>
-                  </div>
-                  
-                  <form onSubmit={handleFormSubmit} className="mt-5 space-y-4">
-                    {/* 제목 필드 */}
-                    <div>
-                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                        제목
-                      </label>
-                      <input
-                        type="text"
-                        name="title"
-                        id="title"
-                        required
-                        defaultValue={selectedReservation?.title || ''}
-                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-                        placeholder="예약 제목"
-                      />
-                    </div>
-                    
-                    {/* 사용자 선택 필드 추가 */}
-                    <div>
-                      <label htmlFor="user" className="block text-sm font-medium text-gray-700">
-                        사용자
-                      </label>
-                      <select
-                        name="user"
-                        id="user"
-                        required
-                        defaultValue={selectedReservation?.user || ''}
-                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-                      >
-                        <option value="" disabled>선택하세요</option>
-                        {users.map(item => (
-                          <option key={item.id} value={item.id}>{item.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  
-                    <div>
-                      <label htmlFor="equipment" className="block text-sm font-medium text-gray-700">
-                        장비
-                      </label>
-                      <select
-                        name="equipment"
-                        id="equipment"
-                        required
-                        defaultValue={selectedReservation?.equipment || ''}
-                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-                      >
-                        <option value="" disabled>선택하세요</option>
-                        {equipment.map(item => (
-                          <option key={item.id} value={item.id}>{item.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                        설명
-                      </label>
-                      <textarea
-                        name="description"
-                        id="description"
-                        rows={3}
-                        defaultValue={selectedReservation?.notes || ''}
-                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-                      />
-                    </div>
-                    
-                    <div className={isMobile ? "space-y-4" : "grid grid-cols-2 gap-4"}>
-                      <div>
-                        <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
-                          시작 시간
-                        </label>
-                        <input
-                          type="datetime-local"
-                          name="startTime"
-                          id="startTime"
-                          required
-                          defaultValue={
-                            selectedReservation && selectedReservation.startTime
-                              ? format(new Date(selectedReservation.startTime), "yyyy-MM-dd'T'HH:mm")
-                              : selectedDate
-                                ? format(new Date(selectedDate.start), "yyyy-MM-dd'T'HH:mm")
-                                : ''
-                          }
-                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
-                          종료 시간
-                        </label>
-                        <input
-                          type="datetime-local"
-                          name="endTime"
-                          id="endTime"
-                          required
-                          defaultValue={
-                            selectedReservation && selectedReservation.endTime
-                              ? format(new Date(selectedReservation.endTime), "yyyy-MM-dd'T'HH:mm")
-                              : selectedDate
-                                ? format(new Date(selectedDate.end), "yyyy-MM-dd'T'HH:mm")
-                                : ''
-                          }
-                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className={isMobile ? "flex flex-col space-y-3 mt-6" : "mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3"}>
-                      <button
-                        type="submit"
-                        className={`inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${!isMobile && 'sm:col-start-2'}`}
-                      >
-                        {selectedReservation ? '저장' : '생성'}
-                      </button>
-                      
-                      <button
-                        type="button"
-                        className={`mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 ${!isMobile && 'sm:col-start-1 sm:mt-0'}`}
-                        onClick={() => setModalOpen(false)}
-                      >
-                        취소
-                      </button>
-                    </div>
-                    
-                    {selectedReservation && (
-                      <div className="mt-3 flex justify-center">
-                        <button
-                          type="button"
-                          onClick={handleDelete}
-                          className="text-sm text-red-600 hover:text-red-500"
-                        >
-                          예약 삭제
-                        </button>
-                      </div>
-                    )}
-                  </form>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition.Root>
-    </div>
-  )
-}
