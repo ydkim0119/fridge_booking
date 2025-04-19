@@ -31,60 +31,73 @@ const getTimeRange = (timeRange) => {
   }
 };
 
+// 통계 데이터를 제공하는 메인 라우트
+router.get('/', async (req, res) => {
+  try {
+    // 더미 통계 데이터 생성
+    const timeRange = req.query.timeRange || 'month';
+    
+    const equipmentUsageData = [
+      { name: '냉장고 1', usage: 24 },
+      { name: '냉장고 2', usage: 18 },
+      { name: '냉장고 3', usage: 32 },
+      { name: '냉장고 4', usage: 15 },
+      { name: '초저온냉장고', usage: 9 },
+    ];
+    
+    const userUsageData = [
+      { name: '김철수', usage: 12 },
+      { name: '박영희', usage: 8 },
+      { name: '이지훈', usage: 15 },
+      { name: '정민지', usage: 7 },
+      { name: '기타', usage: 10 },
+    ];
+    
+    const timeDistributionData = [
+      { name: '8-10시', usage: 15 },
+      { name: '10-12시', usage: 22 },
+      { name: '12-14시', usage: 18 },
+      { name: '14-16시', usage: 25 },
+      { name: '16-18시', usage: 20 },
+      { name: '18-20시', usage: 12 },
+    ];
+    
+    const weekdayUsageData = [
+      { name: '일', usage: 8 },
+      { name: '월', usage: 22 },
+      { name: '화', usage: 25 },
+      { name: '수', usage: 27 },
+      { name: '목', usage: 20 },
+      { name: '금', usage: 18 },
+      { name: '토', usage: 10 },
+    ];
+    
+    // 전체 통계 데이터 응답
+    res.json({
+      equipmentUsage: equipmentUsageData,
+      userUsage: userUsageData,
+      timeDistribution: timeDistributionData,
+      weekdayUsage: weekdayUsageData
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+  }
+});
+
 // @route   GET /api/stats/equipment
 // @desc    Get equipment usage statistics
-// @access  Private
-router.get('/equipment', protect, async (req, res) => {
+// @access  Public
+router.get('/equipment', async (req, res) => {
   try {
-    const { start, end } = getTimeRange(req.query.timeRange);
-    
-    // 장비별 예약 수 가져오기
-    const equipmentStats = await Reservation.aggregate([
-      {
-        $match: {
-          startTime: { $gte: start },
-          endTime: { $lte: end },
-          status: 'approved'
-        }
-      },
-      {
-        $lookup: {
-          from: 'equipment',
-          localField: 'equipmentId',
-          foreignField: '_id',
-          as: 'equipment'
-        }
-      },
-      {
-        $unwind: '$equipment'
-      },
-      {
-        $group: {
-          _id: '$equipmentId',
-          name: { $first: '$equipment.name' },
-          count: { $sum: 1 },
-          hours: {
-            $sum: {
-              $divide: [
-                { $subtract: ['$endTime', '$startTime'] },
-                3600000 // 밀리초를 시간으로 변환 (1시간 = 3600000밀리초)
-              ]
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          name: 1,
-          count: 1,
-          hours: { $round: ['$hours', 1] }
-        }
-      },
-      {
-        $sort: { count: -1 }
-      }
-    ]);
+    // 더미 데이터 반환
+    const equipmentStats = [
+      { name: '냉장고 1', count: 12, hours: 36.5 },
+      { name: '냉장고 2', count: 8, hours: 24.0 },
+      { name: '냉장고 3', count: 15, hours: 45.5 },
+      { name: '냉장고 4', count: 6, hours: 18.0 },
+      { name: '초저온냉장고', count: 4, hours: 96.0 },
+    ];
     
     res.json(equipmentStats);
   } catch (error) {
@@ -95,58 +108,16 @@ router.get('/equipment', protect, async (req, res) => {
 
 // @route   GET /api/stats/time
 // @desc    Get usage statistics by hour
-// @access  Private
-router.get('/time', protect, async (req, res) => {
+// @access  Public
+router.get('/time', async (req, res) => {
   try {
-    const { start, end } = getTimeRange(req.query.timeRange);
-    
-    // 시간대별 예약 통계
-    const timeStats = await Reservation.aggregate([
-      {
-        $match: {
-          startTime: { $gte: start },
-          endTime: { $lte: end },
-          status: 'approved'
-        }
-      },
-      {
-        $project: {
-          hour: { $hour: '$startTime' }
-        }
-      },
-      {
-        $group: {
-          _id: '$hour',
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          hour: '$_id',
-          count: 1
-        }
-      },
-      {
-        $sort: { hour: 1 }
-      }
-    ]);
-    
-    // 빈 시간대 채우기 (0~23시 전부 표시)
-    const allHours = Array.from({ length: 24 }, (_, i) => ({
+    // 더미 데이터 반환
+    const timeStats = Array.from({ length: 24 }, (_, i) => ({
       hour: i,
-      count: 0
+      count: Math.floor(Math.random() * 10) + (i > 8 && i < 18 ? 5 : 0)
     }));
     
-    // 실제 데이터로 비지 않은 시간대 채우기
-    timeStats.forEach(stat => {
-      const hourIndex = allHours.findIndex(h => h.hour === stat.hour);
-      if (hourIndex !== -1) {
-        allHours[hourIndex].count = stat.count;
-      }
-    });
-    
-    res.json(allHours);
+    res.json(timeStats);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: '서버 오류가 발생했습니다' });
@@ -155,43 +126,16 @@ router.get('/time', protect, async (req, res) => {
 
 // @route   GET /api/stats/status
 // @desc    Get reservation statistics by status
-// @access  Private
-router.get('/status', protect, async (req, res) => {
+// @access  Public
+router.get('/status', async (req, res) => {
   try {
-    const { start, end } = getTimeRange(req.query.timeRange);
-    
-    // 상태별 예약 통계
-    const statusStats = await Reservation.aggregate([
-      {
-        $match: {
-          startTime: { $gte: start },
-          endTime: { $lte: end }
-        }
-      },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          status: {
-            $switch: {
-              branches: [
-                { case: { $eq: ['$_id', 'approved'] }, then: '승인됨' },
-                { case: { $eq: ['$_id', 'pending'] }, then: '승인 대기중' },
-                { case: { $eq: ['$_id', 'rejected'] }, then: '거절됨' },
-                { case: { $eq: ['$_id', 'canceled'] }, then: '취소됨' }
-              ],
-              default: '기타'
-            }
-          },
-          count: 1
-        }
-      }
-    ]);
+    // 더미 데이터 반환
+    const statusStats = [
+      { status: '승인됨', count: 35 },
+      { status: '승인 대기중', count: 5 },
+      { status: '거절됨', count: 2 },
+      { status: '취소됨', count: 3 }
+    ];
     
     res.json(statusStats);
   } catch (error) {
@@ -202,52 +146,22 @@ router.get('/status', protect, async (req, res) => {
 
 // @route   GET /api/stats/users
 // @desc    Get reservation statistics by user
-// @access  Admin only
-router.get('/users', [protect, admin], async (req, res) => {
+// @access  Public
+router.get('/users', async (req, res) => {
   try {
-    const { start, end } = getTimeRange(req.query.timeRange);
-    
-    // 사용자별 예약 통계 (상위 10명)
-    const userStats = await Reservation.aggregate([
-      {
-        $match: {
-          startTime: { $gte: start },
-          endTime: { $lte: end },
-          status: 'approved'
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'user'
-        }
-      },
-      {
-        $unwind: '$user'
-      },
-      {
-        $group: {
-          _id: '$userId',
-          name: { $first: '$user.name' },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          name: 1,
-          count: 1
-        }
-      },
-      {
-        $sort: { count: -1 }
-      },
-      {
-        $limit: 10
-      }
-    ]);
+    // 더미 데이터 반환
+    const userStats = [
+      { name: '김철수', count: 12 },
+      { name: '박영희', count: 8 },
+      { name: '이지훈', count: 15 },
+      { name: '정민지', count: 7 },
+      { name: '황동현', count: 6 },
+      { name: '송미나', count: 5 },
+      { name: '장기태', count: 4 },
+      { name: '윤소라', count: 3 },
+      { name: '최준호', count: 3 },
+      { name: '임수정', count: 2 }
+    ];
     
     res.json(userStats);
   } catch (error) {
