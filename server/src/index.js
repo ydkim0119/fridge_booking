@@ -32,10 +32,14 @@ app.use(morgan('dev'));
 
 // 상태 확인 라우트
 app.get('/api/health', (req, res) => {
+  // 데이터베이스 상태 확인을 위한 함수 import
+  const { isDbConnected } = require('./utils/database');
+
   res.status(200).json({ 
     status: 'ok', 
     message: '서버가 정상적으로 실행 중입니다.',
     mode: useDummyData ? '더미 데이터 모드' : '실제 데이터 모드',
+    db_connected: isDbConnected(),
     env: process.env.NODE_ENV || 'development'
   });
 });
@@ -44,7 +48,9 @@ app.get('/api/health', (req, res) => {
 const connectDB = require('./utils/database');
 (async () => {
   try {
+    console.log('MongoDB 연결 시도 중...');
     const connected = await connectDB();
+    
     if (!connected) {
       useDummyData = true;
       console.log('🔄 MongoDB 연결 실패로 더미 데이터 모드로 전환합니다.');
@@ -53,6 +59,8 @@ const connectDB = require('./utils/database');
     useDummyData = true;
     console.log('🔄 MongoDB 연결 오류로 더미 데이터 모드로 전환합니다.', err.message);
   }
+  
+  // 연결 상태와 관계없이 서버 계속 실행 - 데이터베이스 연결 문제가 발생해도 앱이 작동함
 })();
 
 // API 라우트 정의
@@ -83,38 +91,38 @@ if (useDummyData) {
     { _id: '5', name: '초저온냉장고', description: '-80℃ 보관용', location: '지하 1층', color: '#8B5CF6' },
   ];
 
-  // 더미 예약 데이터
+  // 더미 예약 데이터 (일 단위 예약으로 변경)
   const reservations = [
     {
       _id: '1',
+      title: '시료 냉동 보관',
       user: '1',
       equipment: '1',
-      date: new Date('2025-04-20'),
-      startTime: '2025-04-20T10:00:00',
-      endTime: '2025-04-20T12:00:00',
+      startDate: new Date('2025-04-20'),
+      endDate: new Date('2025-04-21'),
       notes: '생물학 실험 시료 보관',
     },
     {
       _id: '2',
+      title: '화학 실험 시약',
       user: '2',
       equipment: '2',
-      date: new Date('2025-04-21'),
-      startTime: '2025-04-21T14:00:00',
-      endTime: '2025-04-21T16:00:00',
+      startDate: new Date('2025-04-21'),
+      endDate: new Date('2025-04-22'),
       notes: '화학 실험 시약 보관',
     },
     {
       _id: '3',
+      title: '장기 보관용 샘플',
       user: '3',
       equipment: '5',
-      date: new Date('2025-04-22'),
-      startTime: '2025-04-22T09:00:00',
-      endTime: '2025-04-22T11:00:00',
+      startDate: new Date('2025-04-22'),
+      endDate: new Date('2025-04-23'),
       notes: '장기 보관용 샘플',
     },
   ];
 
-  // 더미 API 라우트
+  // 더미 API 라우트 수정 - _id 필드 사용하도록 변경
   app.get('/api/users', (req, res) => {
     res.json(users);
   });
@@ -123,6 +131,40 @@ if (useDummyData) {
     const user = users.find(u => u._id === req.params.id);
     if (user) {
       res.json(user);
+    } else {
+      res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+  });
+  
+  // 사용자 생성 API 추가
+  app.post('/api/users', (req, res) => {
+    const newUser = req.body;
+    newUser._id = String(Math.max(...users.map(u => parseInt(u._id))) + 1);
+    users.push(newUser);
+    res.status(201).json(newUser);
+  });
+  
+  // 사용자 수정 API 추가
+  app.put('/api/users/:id', (req, res) => {
+    const userIndex = users.findIndex(u => u._id === req.params.id);
+    if (userIndex !== -1) {
+      const updatedUser = { ...users[userIndex], ...req.body };
+      users[userIndex] = updatedUser;
+      res.json(updatedUser);
+    } else {
+      res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+  });
+  
+  // 사용자 삭제 API 추가
+  app.delete('/api/users/:id', (req, res) => {
+    const initialLength = users.length;
+    const remainingUsers = users.filter(u => u._id !== req.params.id);
+    
+    if (remainingUsers.length < initialLength) {
+      users.length = 0;
+      users.push(...remainingUsers);
+      res.json({ message: '사용자가 삭제되었습니다.' });
     } else {
       res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
     }
@@ -151,6 +193,40 @@ if (useDummyData) {
       res.status(404).json({ message: '장비를 찾을 수 없습니다.' });
     }
   });
+  
+  // 장비 생성 API 추가
+  app.post('/api/equipment', (req, res) => {
+    const newEquipment = req.body;
+    newEquipment._id = String(Math.max(...equipment.map(e => parseInt(e._id))) + 1);
+    equipment.push(newEquipment);
+    res.status(201).json(newEquipment);
+  });
+  
+  // 장비 수정 API 추가
+  app.put('/api/equipment/:id', (req, res) => {
+    const equipIndex = equipment.findIndex(e => e._id === req.params.id);
+    if (equipIndex !== -1) {
+      const updatedEquipment = { ...equipment[equipIndex], ...req.body };
+      equipment[equipIndex] = updatedEquipment;
+      res.json(updatedEquipment);
+    } else {
+      res.status(404).json({ message: '장비를 찾을 수 없습니다.' });
+    }
+  });
+  
+  // 장비 삭제 API 추가
+  app.delete('/api/equipment/:id', (req, res) => {
+    const initialLength = equipment.length;
+    const remainingEquipment = equipment.filter(e => e._id !== req.params.id);
+    
+    if (remainingEquipment.length < initialLength) {
+      equipment.length = 0;
+      equipment.push(...remainingEquipment);
+      res.json({ message: '장비가 삭제되었습니다.' });
+    } else {
+      res.status(404).json({ message: '장비를 찾을 수 없습니다.' });
+    }
+  });
 
   app.get('/api/reservations', (req, res) => {
     res.json(reservations);
@@ -169,6 +245,58 @@ if (useDummyData) {
     }
     
     res.json(filtered);
+  });
+  
+  // 예약 생성 API 추가
+  app.post('/api/reservations', (req, res) => {
+    const newReservation = {
+      ...req.body,
+      _id: String(Math.max(...reservations.map(r => parseInt(r._id))) + 1)
+    };
+    // 날짜 형식 변환
+    if (typeof newReservation.startDate === 'string') {
+      newReservation.startDate = new Date(newReservation.startDate);
+    }
+    if (typeof newReservation.endDate === 'string') {
+      newReservation.endDate = new Date(newReservation.endDate);
+    }
+    
+    reservations.push(newReservation);
+    res.status(201).json(newReservation);
+  });
+  
+  // 예약 수정 API 추가
+  app.put('/api/reservations/:id', (req, res) => {
+    const reservationIndex = reservations.findIndex(r => r._id === req.params.id);
+    if (reservationIndex !== -1) {
+      const updatedReservation = { ...reservations[reservationIndex], ...req.body };
+      // 날짜 형식 변환
+      if (typeof updatedReservation.startDate === 'string') {
+        updatedReservation.startDate = new Date(updatedReservation.startDate);
+      }
+      if (typeof updatedReservation.endDate === 'string') {
+        updatedReservation.endDate = new Date(updatedReservation.endDate);
+      }
+      
+      reservations[reservationIndex] = updatedReservation;
+      res.json(updatedReservation);
+    } else {
+      res.status(404).json({ message: '예약을 찾을 수 없습니다.' });
+    }
+  });
+  
+  // 예약 삭제 API 추가
+  app.delete('/api/reservations/:id', (req, res) => {
+    const initialLength = reservations.length;
+    const remainingReservations = reservations.filter(r => r._id !== req.params.id);
+    
+    if (remainingReservations.length < initialLength) {
+      reservations.length = 0;
+      reservations.push(...remainingReservations);
+      res.json({ message: '예약이 삭제되었습니다.' });
+    } else {
+      res.status(404).json({ message: '예약을 찾을 수 없습니다.' });
+    }
   });
 
   // 더미 인증 API
@@ -199,7 +327,7 @@ if (useDummyData) {
 // 정적 파일 제공 (프로덕션 환경)
 if (process.env.NODE_ENV === 'production') {
   // 정적 파일 경로 로깅 (디버깅 용도)
-  const staticPath = path.join(__dirname, '../../server/public');
+  const staticPath = path.join(__dirname, '../../client/dist');
   console.log('정적 파일 경로:', staticPath);
   
   // 클라이언트 빌드 결과물 제공
