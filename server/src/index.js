@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
+const fs = require('fs');
 
 // 환경 변수 로드
 dotenv.config();
@@ -326,29 +327,82 @@ if (useDummyData) {
 
 // 정적 파일 제공 (프로덕션 환경)
 if (process.env.NODE_ENV === 'production') {
-  // 정적 파일 경로 로깅 (디버깅 용도)
-  const staticPath = path.join(__dirname, '../../client/dist');
-  console.log('정적 파일 경로:', staticPath);
+  // 가능한 정적 파일 디렉토리 경로들
+  const possibleStaticPaths = [
+    path.join(__dirname, '../../client/dist'),        // 기본 클라이언트 빌드 디렉토리
+    path.join(__dirname, '../public'),                // 서버 public 디렉토리
+    path.join(__dirname, '../../client/build'),       // CRA 스타일 빌드 디렉토리
+    path.join(__dirname, '../dist'),                  // 대체 서버 디렉토리
+    path.join(__dirname, '../../dist'),               // 대체 루트 디렉토리
+    path.join(__dirname, '../../client/public'),      // 클라이언트 public 디렉토리
+    path.resolve(process.cwd(), 'client/dist'),       // CWD 기준 클라이언트 디렉토리
+    path.resolve(process.cwd(), 'dist')               // CWD 기준 dist 디렉토리
+  ];
   
-  // 클라이언트 빌드 결과물 제공
-  app.use(express.static(staticPath));
-  
-  // 클라이언트 라우팅을 위한 설정
-  app.get('*', (req, res) => {
-    const indexPath = path.join(staticPath, 'index.html');
-    console.log('index.html 경로:', indexPath);
-    
-    // 파일 존재 여부 확인
-    try {
-      if (require('fs').existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(404).send('index.html 파일을 찾을 수 없습니다. 빌드가 올바르게 완료되었는지 확인하세요.');
+  // 존재하는 디렉토리 찾기
+  let staticPath = null;
+  for (const dirPath of possibleStaticPaths) {
+    if (fs.existsSync(dirPath)) {
+      try {
+        const dirStats = fs.statSync(dirPath);
+        if (dirStats.isDirectory()) {
+          staticPath = dirPath;
+          break;
+        }
+      } catch (err) {
+        console.error(`경로 검사 중 오류 발생: ${dirPath}`, err.message);
       }
-    } catch (err) {
-      res.status(500).send(`서버 오류: ${err.message}`);
     }
-  });
+  }
+  
+  if (staticPath) {
+    console.log('정적 파일 경로 (발견됨):', staticPath);
+    
+    // 정적 파일 제공 설정
+    app.use(express.static(staticPath));
+    
+    // 클라이언트 라우팅을 위한 설정
+    app.get('*', (req, res) => {
+      // index.html 파일 경로
+      const indexPath = path.join(staticPath, 'index.html');
+      console.log('index.html 파일 경로:', indexPath);
+      
+      try {
+        // 파일 존재 여부 확인
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          // 디렉토리 내용 출력 (디버깅 용도)
+          console.log('디렉토리 내용:');
+          try {
+            const files = fs.readdirSync(staticPath);
+            console.log(files);
+          } catch (err) {
+            console.error('디렉토리 읽기 실패:', err.message);
+          }
+          
+          res.status(404).send(`index.html 파일을 찾을 수 없습니다 (경로: ${indexPath}). 빌드가 올바르게 완료되었는지 확인하세요.`);
+        }
+      } catch (err) {
+        console.error('파일 확인 중 오류 발생:', err.message);
+        res.status(500).send(`서버 오류: ${err.message}`);
+      }
+    });
+  } else {
+    console.error('정적 파일 디렉토리를 찾을 수 없습니다. 다음 경로를 시도했습니다:');
+    possibleStaticPaths.forEach(path => console.log(`- ${path}`));
+    
+    // 정적 파일 디렉토리를 찾을 수 없는 경우에도 API 요청은 계속 처리
+    app.get('*', (req, res) => {
+      if (req.path.startsWith('/api')) {
+        // API 요청은 위에서 정의된 라우트로 처리됨
+        next();
+      } else {
+        // 클라이언트 요청은 정적 파일 디렉토리 누락 오류 반환
+        res.status(500).send('빌드된 클라이언트 파일을 찾을 수 없습니다. 클라이언트 빌드가 올바르게 수행되었는지 확인하세요.');
+      }
+    });
+  }
 }
 
 // 에러 핸들러
