@@ -11,7 +11,7 @@ The goal of this project is to develop a refrigerator booking system for managin
 The frontend of the project is well-developed using React and includes the following pages and components:
 
 - **Dashboard**: Displays an overview of upcoming reservations and equipment status.
-- **Calendar View**: Provides a calendar interface for viewing and managing reservations. Supports monthly and weekly views with mobile optimization.
+- **Calendar View**: Provides a calendar interface for viewing and managing reservations. Supports monthly and weekly views with mobile optimization. Now uses day-based reservations for simpler scheduling.
 - **Stats Dashboard**: Displays usage statistics and patterns for the refrigeration equipment.
 - **Profile Page**: Shows user details.
 - **Admin Panel**: Provides an interface for managing users and equipment without requiring admin privileges.
@@ -24,10 +24,10 @@ The backend of the project is implemented using Node.js and Express and includes
 
 - **User Management**: Routes for managing user information.
 - **Equipment Management**: Routes for creating, updating, deleting, and retrieving equipment information.
-- **Reservation Management**: Comprehensive routes for creating, updating, viewing, and deleting reservations.
+- **Reservation Management**: Comprehensive routes for creating, updating, viewing, and deleting reservations, now with day-based booking instead of time-based.
 - **Statistics**: Routes for retrieving usage statistics and equipment utilization patterns.
 - **Database Models**: Mongoose models for Users, Equipment, and Reservations.
-- **Middleware**: Validation middleware.
+- **Middleware**: Authentication middleware disabled for easier access.
 - **Utility Functions**: Database connection utilities.
 
 ### API Integration
@@ -50,7 +50,7 @@ The backend of the project is implemented using Node.js and Express and includes
 
 ### Recent Improvements
 
-- **Removed Authentication Requirements**: Authentication has been removed to allow direct access to the system without login.
+- **Removed Authentication Requirements**: Authentication has been disabled to allow direct access to the system without login.
 - **System Name Updated**: Changed system name to "SQuIRL Refrigerator Booking System".
 - **Direct Calendar Access**: Made the calendar view immediately accessible as the landing page.
 - **User Selection in Reservations**: Added user selection in reservation form to allow making reservations for any user.
@@ -63,11 +63,12 @@ The backend of the project is implemented using Node.js and Express and includes
 - **Day-Based Reservations**: Changed the reservation system from time-based to day-based for simpler scheduling.
 - **Calendar Visualization**: Updated the calendar to display all-day events for better visibility of reservations.
 - **Form Simplification**: Replaced time inputs with date-only inputs for easier reservation creation.
-- **Statistics Page Fix**: Fixed issues with the statistics page displaying a blank screen.
+- **Statistics Page Fix**: Fixed issues with the statistics page displaying a blank screen by modifying authentication middleware and API endpoints.
 - **API Integration Improvement**: Enhanced API error handling with fallback to dummy data.
+- **Authentication System Disabled**: Completely removed authentication requirements to allow access to all features without login.
 - **Mobile Interface Enhancement**: Improved mobile layout with simplified controls and better touch interaction.
 - **Calendar Interaction Improvement**: Fixed issue where calendar clicks were not responding properly.
-- **Form Elements Enhancement**: Updated form elements styling for better usability.
+- **Database Model Update**: Updated Reservation model to support both day-based and time-based reservations for backward compatibility.
 - **Quick Reservation Feature**: Added "New Reservation" button in layout for quick reservation creation.
 - **Lazy Loading Implementation**: Added lazy loading for non-critical components to improve initial load time.
 - **Fixed Page Refresh Issue**: Resolved problem with continuous page refresh on the first load.
@@ -151,7 +152,7 @@ The backend of the project is implemented using Node.js and Express and includes
 
 ## Current Limitations
 
-- No real authentication system (simplified for access without login)
+- No real authentication system (authentication disabled for easy access)
 - Backend API endpoints work with fallback mechanisms
 - Local data storage without persistent backend synchronization
 - Limited offline capability for complex operations
