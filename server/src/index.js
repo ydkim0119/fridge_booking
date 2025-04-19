@@ -139,10 +139,19 @@ if (useDummyData) {
   
   // 사용자 생성 API 추가
   app.post('/api/users', (req, res) => {
-    const newUser = req.body;
-    newUser._id = String(Math.max(...users.map(u => parseInt(u._id))) + 1);
-    users.push(newUser);
-    res.status(201).json(newUser);
+    try {
+      const newUser = req.body;
+      newUser._id = String(Math.max(...users.map(u => parseInt(u._id))) + 1);
+      // 비밀번호가 없는 경우 기본값 설정
+      if (!newUser.password) {
+        newUser.password = 'password123';
+      }
+      users.push(newUser);
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error('사용자 생성 에러:', error);
+      res.status(500).json({ message: '서버 에러가 발생했습니다' });
+    }
   });
   
   // 사용자 수정 API 추가
