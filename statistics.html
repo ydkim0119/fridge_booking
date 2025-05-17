@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연구실 장비 예약 통계</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+/* Flatpickr 커스텀 스타일 */
+.custom-flatpickr {
+margin-top: 1rem;
+box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+border-radius: 0.5rem;
+overflow: hidden;
+}
+.custom-flatpickr .flatpickr-month {
+background-color: #3b82f6;
+color: white;
+}
+.custom-flatpickr .flatpickr-weekdays {
+background-color: #f3f4f6;
+}
+</style>
+</head>
+<body class="bg-gray-100 font-sans leading-relaxed min-h-screen">
+<main class="container mx-auto p-4 md:p-8">
+<h1 class="text-3xl font-bold text-gray-800 mb-6">장비 예약 통계</h1>
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">통계 기간 설정</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label for="start-date" class="block text-sm font-medium text-gray-700 mb-1">시작 날짜:</label>
+                    <input type="text" id="start-date" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="end-date" class="block text-sm font-medium text-gray-700 mb-1">종료 날짜:</label>
+                    <input type="text" id="end-date" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button id="fetch-stats-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out md:mt-0">통계 조회</button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <button class="quick-select-btn bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out" data-days="30">최근 한달</button>
+                <button class="quick-select-btn bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out" data-days="90">최근 3달</button>
+                <button class="quick-select-btn bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out" data-days="180">최근 6달</button>
+                <button class="quick-select-btn bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out" data-days="365">최근 1년</button>
+            </div>
+             <p id="period-info" class="text-gray-600 text-sm mt-3"></p>
+        </div>
+    
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">장비별 사용 통계</h2>
+            <div id="chart-container" class="mb-6" style="height: 300px">
+                <canvas id="equipment-chart"></canvas>
+            </div>
+            <div id="equipment-stats">
+                <p class="text-gray-500">통계 조회 버튼을 눌러주세요.</p>
+            </div>
+        </div>
+    
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">사용자별 사용 통계</h2>
+            <div id="chart-container-user" class="mb-6" style="height: 300px">
+                <canvas id="user-chart"></canvas>
+            </div>
+            <div id="user-stats">
+                 <p class="text-gray-500">통계 조회 버튼을 눌러주세요.</p>
+            </div>
+        </div>
+    
+        <div class="mt-6 text-center">
+            <a href="index.html" class="text-blue-600 hover:underline">캘린더로 돌아가기</a>
+            
+            <div class="flex justify-center mt-4 space-x-4">
+                <button id="export-csv" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out">
+                    CSV 다운로드
+                </button>
+                <button id="export-pdf" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out">
+                    PDF 다운로드
+                </button>
+            </div>
+        </div>
+    
+    </main> 
+    
+    <!-- 라이브러리 JS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/ko.js"></script>
+    <!-- jsPDF 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        console.log('--- jsPDF Library Status ---');
+        console.log('window.jspdf:', window.jspdf ? 'Loaded' : 'Not Loaded');
+        if (window.jspdf) {
+            console.log('window.jspdf.jsPDF (Constructor):', typeof window.jspdf.jsPDF === 'function' ? 'Available' : 'Not Available');
+            // Attempt to create a temporary instance to check for autoTable
+            if (typeof window.jspdf.jsPDF === 'function') {
+                try {
+                    const TempDoc = window.jspdf.jsPDF; // More direct reference to constructor
+                    const tempDocInstance = new TempDoc();
+                    console.log('tempDocInstance.autoTable (Method):', typeof tempDocInstance.autoTable === 'function' ? 'Available' : 'Not Available - Plugin may not be correctly applied');
+                } catch (e) {
+                    console.error('Error creating temporary jsPDF instance or checking autoTable:', e);
+                }
+            }
+        }
+        console.log('--------------------------');
+    </script>
+    <!-- 커스텀 스크립트 -->
+    <script src="statistics.js"></script>
+</body>
+</html>
